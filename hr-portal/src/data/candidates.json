@@ -1,0 +1,380 @@
+[
+  {
+    "id": "c1",
+    "name": "Aarav Hayes",
+    "email": "aarav.hayes@email.com",
+    "phone": "060-4281563",
+    "location": "Be'er Sheva, Israel",
+    "linkedIn": "linkedin.com/in/aarav-hayes",
+    "github": "github.com/aaravhayes",
+    "status": "active",
+    "summary": "Motivated Junior DevOps Engineer with 1.5 years of experience in cloud infrastructure and automation. Recently completed DevOps bootcamp and eager to apply CI/CD best practices in production environments. Strong foundation in Linux administration, containerization, and infrastructure as code.",
+    "skills": [
+      { "name": "AWS", "level": "intermediate" },
+      { "name": "Docker", "level": "intermediate" },
+      { "name": "Kubernetes", "level": "beginner" },
+      { "name": "Jenkins", "level": "intermediate" },
+      { "name": "Git", "level": "advanced" },
+      { "name": "GitHub Actions", "level": "intermediate" },
+      { "name": "ECS", "level": "beginner" }
+    ],
+    "languages": ["Hebrew", "English"],
+    "experience": [
+      {
+        "title": "Junior DevOps Engineer",
+        "company": "Company 328",
+        "location": "Tel Aviv",
+        "startDate": "2023-01",
+        "endDate": null,
+        "highlights": [
+          "Maintain and monitor AWS infrastructure for 3 client applications",
+          "Write Bash and Python scripts to automate deployment tasks",
+          "Assist in managing Docker containers and basic Kubernetes deployments",
+          "Configure Jenkins pipelines for automated testing and deployment",
+          "Troubleshoot Linux server issues and perform routine maintenance"
+        ]
+      },
+      {
+        "title": "IT Support Technician",
+        "company": "Company 396",
+        "location": "Herzliya",
+        "startDate": "2021-01",
+        "endDate": "2023-01",
+        "highlights": [
+          "Provided technical support for 200+ employees",
+          "Managed Windows and Linux workstations",
+          "Troubleshot network connectivity issues",
+          "Maintained internal documentation wiki"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "degree": "B.Sc. in Computer Science",
+        "institution": "Open University of Israel",
+        "startDate": "2022-01",
+        "endDate": null,
+        "status": "in_progress"
+      }
+    ],
+    "certifications": [
+      { "name": "Azure Solutions Architect Expert", "year": "2022" },
+      { "name": "Azure Fundamentals", "year": "2021" }
+    ],
+    "positionIds": [],
+    "cvFile": "/cvs/cv_001.pdf"
+  },
+  {
+    "id": "c2",
+    "name": "Abby Macias",
+    "email": "abby.macias@email.com",
+    "phone": "060-9969543",
+    "location": "Kfar Saba, Israel",
+    "linkedIn": "linkedin.com/in/abby-macias",
+    "github": "github.com/abbymacias",
+    "status": "active",
+    "summary": "QA Automation Engineer with 2 years of experience in test automation seeking to transition to DevOps. Strong programming skills in Python and experience with CI/CD pipelines from the testing perspective. Familiar with Docker and AWS from QA automation work. Eager to expand infrastructure and deployment automation skills.",
+    "skills": [
+      { "name": "Python", "level": "advanced" },
+      { "name": "Selenium", "level": "advanced" },
+      { "name": "Pytest", "level": "advanced" },
+      { "name": "Jenkins", "level": "intermediate" },
+      { "name": "Docker", "level": "intermediate" },
+      { "name": "Git", "level": "advanced" }
+    ],
+    "languages": ["Hebrew", "English", "Russian"],
+    "experience": [
+      {
+        "title": "QA Automation Engineer",
+        "company": "Company 488",
+        "location": "Rehovot",
+        "startDate": "2022-01",
+        "endDate": null,
+        "highlights": [
+          "Develop and maintain automated test suites using Python and Selenium",
+          "Write integration tests for microservices using Pytest",
+          "Integrate automated tests into Jenkins CI/CD pipelines",
+          "Set up test environments using Docker containers",
+          "Perform API testing using Postman and Python requests library"
+        ]
+      },
+      {
+        "title": "Manual QA Tester",
+        "company": "Company 177",
+        "location": "Petah Tikva",
+        "startDate": "2021-01",
+        "endDate": "2022-01",
+        "highlights": [
+          "Performed manual testing for web and mobile applications",
+          "Wrote test cases and documented bugs in Jira",
+          "Participated in agile ceremonies and sprint planning"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "degree": "B.Sc. in Industrial Engineering",
+        "institution": "Afeka College",
+        "startDate": "2017-01",
+        "endDate": "2021-01",
+        "status": "completed"
+      }
+    ],
+    "certifications": [
+      { "name": "Microsoft Certified: DevOps Engineer Expert", "year": "2023" },
+      { "name": "Certified Kubernetes Security Specialist (CKS)", "year": "2023" }
+    ],
+    "positionIds": [],
+    "cvFile": "/cvs/cv_002.pdf"
+  },
+  {
+    "id": "c3",
+    "name": "Abel Hoover",
+    "email": "abel.hoover@email.com",
+    "phone": "060-2931583",
+    "location": "Be'er Sheva, Israel",
+    "status": "active",
+    "summary": "Site Reliability Engineer with 4 years of experience building and maintaining highly available systems. Specialized in observability, incident response, and automation. Strong background in Kubernetes orchestration, monitoring stack design, and performance optimization. Passionate about improving system reliability through SRE best practices and SLO-driven development.",
+    "skills": [
+      { "name": "Kubernetes", "level": "expert" },
+      { "name": "Prometheus", "level": "expert" },
+      { "name": "Grafana", "level": "expert" },
+      { "name": "Docker", "level": "advanced" },
+      { "name": "Terraform", "level": "advanced" },
+      { "name": "AWS", "level": "advanced" },
+      { "name": "ELK Stack", "level": "advanced" },
+      { "name": "CloudWatch", "level": "intermediate" }
+    ],
+    "languages": ["Hebrew", "English"],
+    "experience": [
+      {
+        "title": "Site Reliability Engineer",
+        "company": "Company 342",
+        "location": "Jerusalem",
+        "startDate": "2022-01",
+        "endDate": null,
+        "highlights": [
+          "Manage production Kubernetes clusters serving 50M+ requests daily",
+          "Reduced incident MTTR by 60% through improved monitoring and automated remediation",
+          "Designed and implemented observability stack using Prometheus, Grafana, and Loki",
+          "Created SLO framework and error budget policies for 15+ services",
+          "Led post-mortem process and drove reliability improvements"
+        ]
+      },
+      {
+        "title": "DevOps Engineer",
+        "company": "Company 150",
+        "location": "Haifa",
+        "startDate": "2020-01",
+        "endDate": "2022-01",
+        "highlights": [
+          "Deployed and maintained AWS infrastructure using Terraform",
+          "Migrated applications from EC2 to containerized Kubernetes environment",
+          "Implemented centralized logging with ELK stack",
+          "Automated deployment processes reducing release time by 70%"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "degree": "B.Sc. in Software Engineering",
+        "institution": "Technion - Israel Institute of Technology",
+        "startDate": "2016-01",
+        "endDate": "2020-01",
+        "status": "completed"
+      }
+    ],
+    "certifications": [],
+    "positionIds": [],
+    "cvFile": "/cvs/cv_003.pdf"
+  },
+  {
+    "id": "c4",
+    "name": "Abel McKinney",
+    "email": "abel.mckinney@email.com",
+    "phone": "060-1451673",
+    "location": "Rishon LeZion, Israel",
+    "linkedIn": "linkedin.com/in/abel-mckinney",
+    "status": "active",
+    "summary": "Cloud Infrastructure Engineer with 5 years of experience specializing in Azure cloud solutions and infrastructure automation. Skilled in designing cost-effective, scalable cloud architectures and implementing Infrastructure as Code practices. Strong focus on security, compliance, and operational excellence in cloud environments.",
+    "skills": [
+      { "name": "Azure", "level": "expert" },
+      { "name": "Terraform", "level": "expert" },
+      { "name": "Kubernetes", "level": "advanced" },
+      { "name": "Docker", "level": "advanced" },
+      { "name": "Azure DevOps", "level": "advanced" },
+      { "name": "ARM Templates", "level": "advanced" },
+      { "name": "PowerShell", "level": "advanced" },
+      { "name": "Python", "level": "intermediate" },
+      { "name": "Ansible", "level": "intermediate" }
+    ],
+    "languages": ["Hebrew", "English"],
+    "experience": [
+      {
+        "title": "Cloud Infrastructure Engineer",
+        "company": "Company 280",
+        "location": "Herzliya",
+        "startDate": "2021-01",
+        "endDate": null,
+        "highlights": [
+          "Design and implement Azure infrastructure for enterprise clients",
+          "Manage multi-subscription Azure environments with governance policies",
+          "Automate infrastructure provisioning using Terraform and ARM templates",
+          "Implement Azure DevOps pipelines for CI/CD workflows",
+          "Optimize cloud costs resulting in 30% reduction in monthly spend"
+        ]
+      },
+      {
+        "title": "Systems Administrator",
+        "company": "Company 192",
+        "location": "Be'er Sheva",
+        "startDate": "2019-01",
+        "endDate": "2021-01",
+        "highlights": [
+          "Managed Windows Server and Linux infrastructure",
+          "Automated routine tasks using PowerShell and Bash",
+          "Migrated on-premise workloads to Azure cloud",
+          "Maintained backup and disaster recovery systems"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "degree": "B.Sc. in Information Systems",
+        "institution": "Ben-Gurion University of the Negev",
+        "startDate": "2015-01",
+        "endDate": "2019-01",
+        "status": "completed"
+      }
+    ],
+    "certifications": [
+      { "name": "Microsoft Certified: DevOps Engineer Expert", "year": "2022" }
+    ],
+    "positionIds": [],
+    "cvFile": "/cvs/cv_004.pdf"
+  },
+  {
+    "id": "c5",
+    "name": "Abigail Bauer",
+    "email": "abigail.bauer@email.com",
+    "phone": "060-3563275",
+    "location": "Herzliya, Israel",
+    "linkedIn": "linkedin.com/in/abigailbauer",
+    "status": "active",
+    "summary": "Career changer transitioning from sales to DevOps engineering. Recently completed intensive DevOps bootcamp (DevOps Experts, 2024). Strong communication skills, customer-focused mindset, and passion for technology. Quick learner with demonstrated ability to master new technical concepts. Seeking junior DevOps role to apply newly acquired skills.",
+    "skills": [
+      { "name": "Docker", "level": "beginner" },
+      { "name": "AWS", "level": "beginner" },
+      { "name": "Terraform", "level": "beginner" },
+      { "name": "Git", "level": "beginner" },
+      { "name": "Linux", "level": "beginner" },
+      { "name": "Bash", "level": "beginner" },
+      { "name": "Prometheus", "level": "beginner" }
+    ],
+    "languages": ["Hebrew", "English", "Spanish"],
+    "experience": [
+      {
+        "title": "Senior Sales Representative",
+        "company": "Company 013",
+        "location": "Tel Aviv",
+        "startDate": "2019-01",
+        "endDate": "2024-01",
+        "highlights": [
+          "Managed key accounts generating $2M annual revenue",
+          "Achieved 120% of sales quota for 4 consecutive years",
+          "Collaborated with technical teams to understand product capabilities",
+          "Presented technical solutions to clients"
+        ]
+      },
+      {
+        "title": "Sales Associate",
+        "company": "Company 133",
+        "location": "Ra'anana",
+        "startDate": "2017-01",
+        "endDate": "2019-01",
+        "highlights": [
+          "Exceeded monthly sales targets consistently",
+          "Provided customer service and support"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "degree": "B.A. in Business Administration",
+        "institution": "Ariel University",
+        "startDate": "2013-01",
+        "endDate": "2017-01",
+        "status": "completed"
+      }
+    ],
+    "certifications": [
+      { "name": "ISTQB Certified Tester Foundation Level", "year": "2020" },
+      { "name": "Certified Kubernetes Security Specialist (CKS)", "year": "2022" }
+    ],
+    "positionIds": [],
+    "cvFile": "/cvs/cv_005.pdf"
+  },
+  {
+    "id": "c6",
+    "name": "Ada Hodges",
+    "email": "ada.hodges@email.com",
+    "phone": "060-8104346",
+    "location": "Petah Tikva, Israel",
+    "linkedIn": "linkedin.com/in/ada-hodges",
+    "status": "active",
+    "summary": "Entry-level Automation Engineer with background in software development transitioning to DevOps. Completed intensive DevOps bootcamp and gained hands-on experience with CI/CD pipelines, containerization, and cloud infrastructure. Strong programming skills and passion for automation and infrastructure as code.",
+    "skills": [
+      { "name": "Python", "level": "advanced" },
+      { "name": "Docker", "level": "intermediate" },
+      { "name": "Jenkins", "level": "intermediate" },
+      { "name": "AWS", "level": "intermediate" },
+      { "name": "GitLab CI", "level": "intermediate" },
+      { "name": "Bash", "level": "intermediate" },
+      { "name": "Ansible", "level": "beginner" },
+      { "name": "Datadog", "level": "beginner" }
+    ],
+    "languages": ["Hebrew", "English"],
+    "experience": [
+      {
+        "title": "Automation Engineer",
+        "company": "Company 444",
+        "location": "Ramat Gan",
+        "startDate": "2024-01",
+        "endDate": null,
+        "highlights": [
+          "Develop Python scripts to automate deployment and testing processes",
+          "Maintain and improve Jenkins CI/CD pipelines",
+          "Create Docker containers for microservices applications",
+          "Write Ansible playbooks for configuration management"
+        ]
+      },
+      {
+        "title": "Junior Software Developer",
+        "company": "Company 355",
+        "location": "Tel Aviv",
+        "startDate": "2022-01",
+        "endDate": "2024-01",
+        "highlights": [
+          "Developed backend services using Python and Flask",
+          "Wrote unit and integration tests",
+          "Participated in code reviews and agile ceremonies"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "degree": "Practical Software Engineer",
+        "institution": "ORT College",
+        "startDate": "2020-01",
+        "endDate": "2022-01",
+        "status": "completed"
+      }
+    ],
+    "certifications": [
+      { "name": "Cisco Certified Network Associate (CCNA)", "year": "2022" },
+      { "name": "Google Cloud Associate Cloud Engineer", "year": "2022" }
+    ],
+    "positionIds": [],
+    "cvFile": "/cvs/cv_006.pdf"
+  }
+]
