@@ -3,6 +3,7 @@ import type { Candidate } from '../types';
 interface CandidateCardProps {
   candidate: Candidate;
   selected: boolean;
+  disabled?: boolean;
   onSelect: (id: string) => void;
   onClick: () => void;
   positionsCount: number;
@@ -11,6 +12,7 @@ interface CandidateCardProps {
 export default function CandidateCard({
   candidate,
   selected,
+  disabled = false,
   onSelect,
   onClick,
   positionsCount,
@@ -35,11 +37,14 @@ export default function CandidateCard({
         <input
           type="checkbox"
           checked={selected}
+          disabled={disabled && !selected}
           onChange={(e) => {
             e.stopPropagation();
             onSelect(candidate.id);
           }}
-          className="mt-1 h-4 w-4 rounded border-gray-300 text-purple-500 focus:ring-purple-400"
+          className={`mt-1 h-4 w-4 rounded border-gray-300 text-purple-500 focus:ring-purple-400 ${
+            disabled && !selected ? 'opacity-40 cursor-not-allowed' : ''
+          }`}
         />
         <div className="flex-1 min-w-0" onClick={onClick}>
           <div className="flex items-center justify-between gap-3">

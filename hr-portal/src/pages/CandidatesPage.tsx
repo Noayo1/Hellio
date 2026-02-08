@@ -37,9 +37,16 @@ export default function CandidatesPage() {
   }, [candidates, searchTerm, positionFilter, skillFilter, statusFilter]);
 
   const handleSelect = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+    setSelectedIds((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((i) => i !== id);
+      }
+      // Limit to 2 selections for comparison
+      if (prev.length >= 2) {
+        return prev;
+      }
+      return [...prev, id];
+    });
   };
 
   const handleAssignPosition = (candidateId: string, positionId: string, assign: boolean) => {
@@ -70,13 +77,18 @@ export default function CandidatesPage() {
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">Candidates</h2>
-          {selectedIds.length >= 2 && (
+          {selectedIds.length === 2 && (
             <button
               onClick={() => setShowCompare(true)}
               className="px-5 py-2.5 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition-colors shadow-sm"
             >
-              Compare Selected ({selectedIds.length})
+              Compare Selected
             </button>
+          )}
+          {selectedIds.length === 1 && (
+            <span className="text-sm text-gray-500">
+              Select one more candidate to compare
+            </span>
           )}
         </div>
 
@@ -137,6 +149,7 @@ export default function CandidatesPage() {
             key={candidate.id}
             candidate={candidate}
             selected={selectedIds.includes(candidate.id)}
+            disabled={selectedIds.length >= 2}
             onSelect={handleSelect}
             onClick={() => setActiveCandidate(candidate)}
             positionsCount={candidate.positionIds.length}
