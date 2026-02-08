@@ -4,3 +4,6 @@ dist/
 *.png
 *.log
 .DS_Store
+CVsJobs/
+Frontend/public/cvs/
+paragraph-explaining.txt
