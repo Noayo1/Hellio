@@ -31,9 +31,9 @@ export default function PositionModal({ position, candidates, onClose }: Positio
             </svg>
           </button>
 
-          <div className="p-6">
+          <div className="p-8">
             {/* Header */}
-            <div className="mb-6">
+            <div className="mb-8">
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">{position.title}</h2>
@@ -42,28 +42,28 @@ export default function PositionModal({ position, candidates, onClose }: Positio
                 <StatusBadge status={position.status} />
               </div>
 
-              <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-gray-500">
+              <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-gray-500">
                 <span>{position.location}</span>
                 <WorkTypeBadge type={position.workType} />
                 <span>{position.experienceYears}+ years experience</span>
               </div>
 
               {position.salary && (
-                <p className="mt-2 text-sm font-medium text-gray-700">{position.salary}</p>
+                <p className="mt-3 text-sm font-medium text-gray-700">{position.salary}</p>
               )}
             </div>
 
             {/* Description */}
             <Section title="Description">
-              <p className="text-gray-700">{position.description}</p>
+              <p className="text-gray-700 leading-relaxed">{position.description}</p>
             </Section>
 
             {/* Must Have Requirements */}
             {mustHave.length > 0 && (
               <Section title="Must Have">
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {mustHave.map((req, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-gray-700">
+                    <li key={idx} className="flex items-start gap-3 text-gray-700">
                       <span className="text-green-500 mt-0.5">
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -79,10 +79,10 @@ export default function PositionModal({ position, candidates, onClose }: Positio
             {/* Nice to Have Requirements */}
             {niceToHave.length > 0 && (
               <Section title="Nice to Have">
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {niceToHave.map((req, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-gray-600">
-                      <span className="text-blue-400 mt-0.5">
+                    <li key={idx} className="flex items-start gap-3 text-gray-600">
+                      <span className="text-purple-400 mt-0.5">
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
                         </svg>
@@ -100,7 +100,7 @@ export default function PositionModal({ position, candidates, onClose }: Positio
                 {position.skills.map((skill) => (
                   <span
                     key={skill}
-                    className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
+                    className="px-3 py-1.5 bg-purple-50 text-purple-700 rounded-md text-sm border border-purple-100"
                   >
                     {skill}
                   </span>
@@ -113,7 +113,7 @@ export default function PositionModal({ position, candidates, onClose }: Positio
               <p className="font-medium text-gray-900">{position.contactName}</p>
               <a
                 href={`mailto:${position.contactEmail}`}
-                className="text-sm text-blue-600 hover:underline"
+                className="text-sm text-purple-600 hover:underline"
               >
                 {position.contactEmail}
               </a>
@@ -124,11 +124,11 @@ export default function PositionModal({ position, candidates, onClose }: Positio
               {candidates.length === 0 ? (
                 <p className="text-gray-500 text-sm">No candidates assigned yet.</p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {candidates.map((candidate) => (
                     <div
                       key={candidate.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-gray-200"
+                      className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-purple-200 hover:bg-purple-50 transition-colors"
                     >
                       <div>
                         <p className="font-medium text-gray-900">{candidate.name}</p>
@@ -140,7 +140,7 @@ export default function PositionModal({ position, candidates, onClose }: Positio
                         href={candidate.cvFile}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:underline"
+                        className="text-sm text-purple-600 hover:underline"
                       >
                         View CV
                       </a>
@@ -158,8 +158,8 @@ export default function PositionModal({ position, candidates, onClose }: Positio
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mb-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-3">{title}</h3>
+    <div className="mb-8">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
       {children}
     </div>
   );
@@ -167,13 +167,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function StatusBadge({ status }: { status: Position['status'] }) {
   const colors = {
-    open: 'bg-green-50 text-green-700',
+    open: 'bg-green-100 text-green-700',
     closed: 'bg-gray-100 text-gray-600',
-    on_hold: 'bg-amber-50 text-amber-700',
+    on_hold: 'bg-amber-100 text-amber-700',
   };
 
   return (
-    <span className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${colors[status]}`}>
+    <span className={`px-3 py-1.5 rounded-full text-sm font-medium capitalize ${colors[status]}`}>
       {status.replace('_', ' ')}
     </span>
   );
@@ -181,13 +181,13 @@ function StatusBadge({ status }: { status: Position['status'] }) {
 
 function WorkTypeBadge({ type }: { type: Position['workType'] }) {
   const colors = {
-    remote: 'bg-purple-50 text-purple-700',
-    hybrid: 'bg-blue-50 text-blue-700',
-    onsite: 'bg-orange-50 text-orange-700',
+    remote: 'bg-purple-50 text-purple-700 border border-purple-100',
+    hybrid: 'bg-purple-50 text-purple-700 border border-purple-100',
+    onsite: 'bg-purple-50 text-purple-700 border border-purple-100',
   };
 
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${colors[type]}`}>
+    <span className={`px-2.5 py-1 rounded-md text-xs font-medium capitalize ${colors[type]}`}>
       {type}
     </span>
   );

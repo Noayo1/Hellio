@@ -39,29 +39,29 @@ export default function CandidateModal({
             </svg>
           </button>
 
-          <div className="p-6">
+          <div className="p-8">
             {/* Header */}
-            <div className="mb-6">
+            <div className="mb-8">
               <h2 className="text-2xl font-bold text-gray-900">{candidate.name}</h2>
               {candidate.experience[0] && (
                 <p className="text-lg text-gray-600 mt-1">{candidate.experience[0].title}</p>
               )}
 
-              <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-gray-500">
+              <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-gray-500">
                 <span>{candidate.location}</span>
-                <a href={`mailto:${candidate.email}`} className="text-blue-600 hover:underline">
+                <a href={`mailto:${candidate.email}`} className="text-purple-600 hover:underline">
                   {candidate.email}
                 </a>
                 {candidate.phone && <span>{candidate.phone}</span>}
               </div>
 
-              <div className="flex gap-3 mt-3">
+              <div className="flex gap-3 mt-4">
                 {candidate.linkedIn && (
                   <a
                     href={`https://${candidate.linkedIn}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:underline"
+                    className="px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
                   >
                     LinkedIn
                   </a>
@@ -71,7 +71,7 @@ export default function CandidateModal({
                     href={`https://${candidate.github}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:underline"
+                    className="px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
                   >
                     GitHub
                   </a>
@@ -80,7 +80,7 @@ export default function CandidateModal({
                   href={candidate.cvFile}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:underline font-medium"
+                  className="px-4 py-2 text-sm font-medium text-white bg-purple-500 rounded-lg hover:bg-purple-600 transition-colors"
                 >
                   Download CV
                 </a>
@@ -89,7 +89,7 @@ export default function CandidateModal({
 
             {/* Summary */}
             <Section title="Summary">
-              <p className="text-gray-700">{candidate.summary}</p>
+              <p className="text-gray-700 leading-relaxed">{candidate.summary}</p>
             </Section>
 
             {/* Skills */}
@@ -98,11 +98,11 @@ export default function CandidateModal({
                 {candidate.skills.map((skill) => (
                   <span
                     key={skill.name}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-50 text-blue-700"
+                    className="inline-flex items-center px-3 py-1.5 rounded-md text-sm bg-purple-50 text-purple-700 border border-purple-100"
                   >
                     {skill.name}
                     {skill.level && (
-                      <span className="ml-1.5 text-xs text-blue-500">({skill.level})</span>
+                      <span className="ml-1.5 text-xs text-purple-500">({skill.level})</span>
                     )}
                   </span>
                 ))}
@@ -111,20 +111,20 @@ export default function CandidateModal({
 
             {/* Experience */}
             <Section title="Experience">
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {candidate.experience.map((exp, idx) => (
-                  <div key={idx} className="border-l-2 border-blue-200 pl-4">
+                  <div key={idx} className="border-l-2 border-purple-200 pl-5">
                     <h4 className="font-semibold text-gray-900">{exp.title}</h4>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 mt-1">
                       {exp.company} {exp.location && `• ${exp.location}`}
                     </p>
                     <p className="text-sm text-gray-500">
                       {exp.startDate} - {exp.endDate || 'Present'}
                     </p>
-                    <ul className="mt-2 space-y-1">
+                    <ul className="mt-3 space-y-1.5">
                       {exp.highlights.map((h, i) => (
                         <li key={i} className="text-sm text-gray-700 flex">
-                          <span className="mr-2 text-blue-400">•</span>
+                          <span className="mr-2 text-purple-400">•</span>
                           {h}
                         </li>
                       ))}
@@ -136,7 +136,7 @@ export default function CandidateModal({
 
             {/* Education */}
             <Section title="Education">
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {candidate.education.map((edu, idx) => (
                   <div key={idx}>
                     <h4 className="font-semibold text-gray-900">{edu.degree}</h4>
@@ -172,7 +172,7 @@ export default function CandidateModal({
                 {candidate.languages.map((lang) => (
                   <span
                     key={lang}
-                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+                    className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm"
                   >
                     {lang}
                   </span>
@@ -182,19 +182,19 @@ export default function CandidateModal({
 
             {/* Position Assignment */}
             <Section title="Assigned Positions">
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {positions.filter((p) => p.status === 'open').map((position) => {
                   const isAssigned = candidate.positionIds.includes(position.id);
                   return (
                     <label
                       key={position.id}
-                      className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer"
+                      className="flex items-center gap-4 p-4 rounded-lg border border-gray-200 hover:bg-purple-50 hover:border-purple-200 cursor-pointer transition-colors"
                     >
                       <input
                         type="checkbox"
                         checked={isAssigned}
                         onChange={() => handlePositionToggle(position.id)}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-gray-300 text-purple-500 focus:ring-purple-400"
                       />
                       <div className="flex-1">
                         <p className="font-medium text-gray-900">{position.title}</p>
@@ -214,8 +214,8 @@ export default function CandidateModal({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mb-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-3">{title}</h3>
+    <div className="mb-8">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
       {children}
     </div>
   );

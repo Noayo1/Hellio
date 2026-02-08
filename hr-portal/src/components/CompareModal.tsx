@@ -29,25 +29,25 @@ export default function CompareModal({ candidates, onClose }: CompareModalProps)
             </svg>
           </button>
 
-          <div className="p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Compare Candidates</h2>
+          <div className="p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-8">Compare Candidates</h2>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-8">
               {/* Headers */}
               <CompareHeader candidate={c1} />
               <CompareHeader candidate={c2} />
 
               {/* Summary */}
               <CompareSection title="Summary" className="col-span-2">
-                <div className="grid grid-cols-2 gap-6">
-                  <p className="text-sm text-gray-700">{c1.summary}</p>
-                  <p className="text-sm text-gray-700">{c2.summary}</p>
+                <div className="grid grid-cols-2 gap-8">
+                  <p className="text-sm text-gray-700 leading-relaxed">{c1.summary}</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{c2.summary}</p>
                 </div>
               </CompareSection>
 
               {/* Skills */}
               <CompareSection title="Skills" className="col-span-2">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-8">
                   <SkillsList skills={c1.skills} compareWith={c2.skills} />
                   <SkillsList skills={c2.skills} compareWith={c1.skills} />
                 </div>
@@ -55,7 +55,7 @@ export default function CompareModal({ candidates, onClose }: CompareModalProps)
 
               {/* Experience */}
               <CompareSection title="Experience" className="col-span-2">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-8">
                   <ExperienceList experience={c1.experience} />
                   <ExperienceList experience={c2.experience} />
                 </div>
@@ -63,7 +63,7 @@ export default function CompareModal({ candidates, onClose }: CompareModalProps)
 
               {/* Education */}
               <CompareSection title="Education" className="col-span-2">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-8">
                   <EducationList education={c1.education} />
                   <EducationList education={c2.education} />
                 </div>
@@ -71,7 +71,7 @@ export default function CompareModal({ candidates, onClose }: CompareModalProps)
 
               {/* Certifications */}
               <CompareSection title="Certifications" className="col-span-2">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-8">
                   <CertificationsList certifications={c1.certifications} />
                   <CertificationsList certifications={c2.certifications} />
                 </div>
@@ -79,17 +79,17 @@ export default function CompareModal({ candidates, onClose }: CompareModalProps)
 
               {/* Languages */}
               <CompareSection title="Languages" className="col-span-2">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-8">
                   <div className="flex flex-wrap gap-2">
                     {c1.languages.map((lang) => (
-                      <span key={lang} className="px-2 py-1 bg-gray-100 rounded text-sm">
+                      <span key={lang} className="px-3 py-1.5 bg-gray-100 rounded-md text-sm">
                         {lang}
                       </span>
                     ))}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {c2.languages.map((lang) => (
-                      <span key={lang} className="px-2 py-1 bg-gray-100 rounded text-sm">
+                      <span key={lang} className="px-3 py-1.5 bg-gray-100 rounded-md text-sm">
                         {lang}
                       </span>
                     ))}
@@ -107,10 +107,10 @@ export default function CompareModal({ candidates, onClose }: CompareModalProps)
 function CompareHeader({ candidate }: { candidate: Candidate }) {
   const currentJob = candidate.experience[0];
   return (
-    <div className="pb-4 border-b border-gray-200">
+    <div className="pb-5 border-b border-purple-100">
       <h3 className="text-xl font-bold text-gray-900">{candidate.name}</h3>
-      {currentJob && <p className="text-gray-600">{currentJob.title}</p>}
-      <p className="text-sm text-gray-500 mt-1">{candidate.location}</p>
+      {currentJob && <p className="text-gray-600 mt-1">{currentJob.title}</p>}
+      <p className="text-sm text-gray-500 mt-2">{candidate.location}</p>
     </div>
   );
 }
@@ -125,8 +125,8 @@ function CompareSection({
   className?: string;
 }) {
   return (
-    <div className={`py-4 border-b border-gray-100 ${className}`}>
-      <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+    <div className={`py-5 border-b border-gray-100 ${className}`}>
+      <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
         {title}
       </h4>
       {children}
@@ -149,10 +149,10 @@ function SkillsList({
         return (
           <span
             key={skill.name}
-            className={`px-2 py-1 rounded text-sm ${
+            className={`px-3 py-1.5 rounded-md text-sm ${
               isUnique
                 ? 'bg-green-50 text-green-700 border border-green-200'
-                : 'bg-blue-50 text-blue-700'
+                : 'bg-purple-50 text-purple-700 border border-purple-100'
             }`}
           >
             {skill.name}
@@ -166,11 +166,11 @@ function SkillsList({
 
 function ExperienceList({ experience }: { experience: Candidate['experience'] }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {experience.map((exp, idx) => (
-        <div key={idx} className="border-l-2 border-blue-200 pl-3">
+        <div key={idx} className="border-l-2 border-purple-200 pl-4">
           <p className="font-medium text-gray-900 text-sm">{exp.title}</p>
-          <p className="text-xs text-gray-600">{exp.company}</p>
+          <p className="text-xs text-gray-600 mt-1">{exp.company}</p>
           <p className="text-xs text-gray-500">
             {exp.startDate} - {exp.endDate || 'Present'}
           </p>
@@ -182,7 +182,7 @@ function ExperienceList({ experience }: { experience: Candidate['experience'] })
 
 function EducationList({ education }: { education: Candidate['education'] }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {education.map((edu, idx) => (
         <div key={idx}>
           <p className="font-medium text-gray-900 text-sm">{edu.degree}</p>
@@ -201,7 +201,7 @@ function CertificationsList({ certifications }: { certifications: Candidate['cer
     return <p className="text-sm text-gray-400">No certifications</p>;
   }
   return (
-    <div className="space-y-1">
+    <div className="space-y-2">
       {certifications.map((cert, idx) => (
         <div key={idx} className="flex justify-between text-sm">
           <span className="text-gray-700">{cert.name}</span>

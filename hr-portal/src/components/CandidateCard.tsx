@@ -19,13 +19,19 @@ export default function CandidateCard({
   const yearsOfExp = calculateYearsOfExperience(candidate.experience);
   const topSkills = candidate.skills.slice(0, 3);
 
+  const statusColors = {
+    active: 'bg-green-100 text-green-700',
+    inactive: 'bg-gray-100 text-gray-600',
+    hired: 'bg-purple-100 text-purple-700',
+  };
+
   return (
     <div
-      className={`bg-white rounded-lg border p-5 cursor-pointer transition-all hover:shadow-md ${
-        selected ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'
+      className={`bg-white rounded-xl shadow-md p-7 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg hover:border-purple-200 border border-transparent ${
+        selected ? 'ring-2 ring-purple-400' : ''
       }`}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-4">
         <input
           type="checkbox"
           checked={selected}
@@ -33,27 +39,32 @@ export default function CandidateCard({
             e.stopPropagation();
             onSelect(candidate.id);
           }}
-          className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          className="mt-1 h-4 w-4 rounded border-gray-300 text-purple-500 focus:ring-purple-400"
         />
         <div className="flex-1 min-w-0" onClick={onClick}>
-          <h3 className="font-semibold text-gray-900 truncate">{candidate.name}</h3>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="font-semibold text-gray-900 truncate text-base">{candidate.name}</h3>
+            <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[candidate.status]}`}>
+              {candidate.status}
+            </span>
+          </div>
           {currentJob && (
-            <p className="text-sm text-gray-600 truncate">{currentJob.title}</p>
+            <p className="text-sm text-gray-600 truncate mt-1">{currentJob.title}</p>
           )}
-          <p className="text-sm text-gray-500 mt-1">{candidate.location}</p>
+          <p className="text-sm text-gray-500 mt-2">{candidate.location}</p>
 
-          <div className="flex flex-wrap gap-1.5 mt-3">
+          <div className="flex flex-wrap gap-2 mt-4">
             {topSkills.map((skill) => (
               <span
                 key={skill.name}
-                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700"
+                className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100"
               >
                 {skill.name}
               </span>
             ))}
           </div>
 
-          <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+          <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-100 text-xs text-gray-500">
             <span>{yearsOfExp} years exp</span>
             <span>{positionsCount} position{positionsCount !== 1 ? 's' : ''}</span>
           </div>
