@@ -75,13 +75,37 @@ export default function CandidateCard({
 }
 
 function calculateYearsOfExperience(experience: Candidate['experience']): number {
-  let totalMonths = 0;
+  if (experience.length === 0) return 0;
+
   const now = new Date();
 
-  for (const exp of experience) {
-    const start = parseDate(exp.startDate);
-    const end = exp.endDate ? parseDate(exp.endDate) : now;
-    const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+  // Convert experiences to date ranges
+  const ranges = experience.map((exp) => ({
+    start: parseDate(exp.startDate),
+    end: exp.endDate ? parseDate(exp.endDate) : now,
+  }));
+
+  // Sort by start date
+  ranges.sort((a, b) => a.start.getTime() - b.start.getTime());
+
+  // Merge overlapping ranges
+  const merged: { start: Date; end: Date }[] = [];
+  for (const range of ranges) {
+    if (merged.length === 0 || range.start > merged[merged.length - 1].end) {
+      merged.push({ ...range });
+    } else {
+      merged[merged.length - 1].end = new Date(
+        Math.max(merged[merged.length - 1].end.getTime(), range.end.getTime())
+      );
+    }
+  }
+
+  // Calculate total months from merged ranges
+  let totalMonths = 0;
+  for (const range of merged) {
+    const months =
+      (range.end.getFullYear() - range.start.getFullYear()) * 12 +
+      (range.end.getMonth() - range.start.getMonth());
     totalMonths += Math.max(0, months);
   }
 
