@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { Candidate, Position } from '../types';
 import PositionCard from '../components/PositionCard';
 import PositionModal from '../components/PositionModal';
@@ -22,15 +22,19 @@ export default function PositionsPage() {
     });
   }, [positions, searchTerm, statusFilter]);
 
-  // Count candidates for each position
-  const getCandidateCount = (positionId: string) => {
-    return candidates.filter((c) => c.positionIds.includes(positionId)).length;
-  };
+  // Pre-compute candidate counts for all positions
+  const candidateCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    positions.forEach((p) => {
+      counts[p.id] = candidates.filter((c) => c.positionIds.includes(p.id)).length;
+    });
+    return counts;
+  }, [positions, candidates]);
 
-  // Get candidates for a position
-  const getCandidatesForPosition = (positionId: string) => {
+  // Get candidates for a position (memoized)
+  const getCandidatesForPosition = useCallback((positionId: string) => {
     return candidates.filter((c) => c.positionIds.includes(positionId));
-  };
+  }, [candidates]);
 
   return (
     <div>
@@ -79,7 +83,7 @@ export default function PositionsPage() {
             key={position.id}
             position={position}
             onClick={() => setActivePosition(position)}
-            candidatesCount={getCandidateCount(position.id)}
+            candidatesCount={candidateCounts[position.id] ?? 0}
           />
         ))}
       </div>

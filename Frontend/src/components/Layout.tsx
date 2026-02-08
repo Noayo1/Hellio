@@ -86,15 +86,6 @@ export default function Layout() {
                 </NavLink>
               </nav>
             </div>
-
-            {/* Decorative element */}
-            <div className="hidden lg:flex items-center gap-3">
-              <div className="flex -space-x-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-xs font-medium ring-2 ring-white">
-                  HR
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </header>

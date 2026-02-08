@@ -77,6 +77,4 @@ export interface Position {
 
   contactName: string;
   contactEmail: string;
-
-  candidateIds: string[];
 }

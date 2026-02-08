@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useEffect } from 'react';
 import type { Candidate, Position } from '../types';
+import { calculateYearsOfExperience } from '../utils/date';
 
 interface CandidateModalProps {
   candidate: Candidate;
@@ -44,6 +45,7 @@ export default function CandidateModal({
           {/* Close button */}
           <button
             onClick={onClose}
+            aria-label="Close modal"
             className="absolute top-4 right-4 p-2.5 rounded-xl bg-gray-100 text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-all z-10"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -93,6 +95,12 @@ export default function CandidateModal({
                     {candidate.phone}
                   </span>
                 )}
+                <span className="flex items-center gap-1.5 bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg font-medium">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {calculateYearsOfExperience(candidate.experience)} years experience
+                </span>
               </div>
 
               <div className="flex gap-3 mt-5">

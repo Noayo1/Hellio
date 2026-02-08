@@ -23,8 +23,7 @@
     "workType": "hybrid",
     "salary": "Competitive + Equity",
     "contactName": "Sarah Chen",
-    "contactEmail": "sarah.chen@company.com",
-    "candidateIds": []
+    "contactEmail": "sarah.chen@company.com"
   },
   {
     "id": "p2",
@@ -48,8 +47,7 @@
     "workType": "hybrid",
     "salary": "12,000-15,000 NIS/month",
     "contactName": "Michael Goldberg",
-    "contactEmail": "m.goldberg@techcorp.co.il",
-    "candidateIds": []
+    "contactEmail": "m.goldberg@techcorp.co.il"
   },
   {
     "id": "p3",
@@ -75,8 +73,7 @@
     "workType": "hybrid",
     "salary": "Competitive + Equity",
     "contactName": "David Kim",
-    "contactEmail": "d.kim@fintech-innovations.com",
-    "candidateIds": []
+    "contactEmail": "d.kim@fintech-innovations.com"
   },
   {
     "id": "p4",
@@ -101,8 +98,7 @@
     "workType": "remote",
     "salary": "25,000-35,000 NIS/month + 0.5-1% equity",
     "contactName": "Maya Cohen",
-    "contactEmail": "maya@startup-accelerator.co.il",
-    "candidateIds": []
+    "contactEmail": "maya@startup-accelerator.co.il"
   },
   {
     "id": "p5",
@@ -128,8 +124,7 @@
     "workType": "hybrid",
     "salary": "11,000-14,000 NIS/month",
     "contactName": "Yael Mizrahi",
-    "contactEmail": "yael.m@edutech-platform.com",
-    "candidateIds": []
+    "contactEmail": "yael.m@edutech-platform.com"
   },
   {
     "id": "p6",
@@ -155,7 +150,6 @@
     "workType": "hybrid",
     "salary": "24,000-32,000 NIS/month + bonuses",
     "contactName": "Eitan Goldstein",
-    "contactEmail": "egoldstein@container-solutions.io",
-    "candidateIds": []
+    "contactEmail": "egoldstein@container-solutions.io"
   }
 ]

@@ -36,6 +36,7 @@ export default function PositionModal({ position, candidates, onClose }: Positio
           {/* Close button */}
           <button
             onClick={onClose}
+            aria-label="Close modal"
             className="absolute top-4 right-4 p-2.5 rounded-xl bg-gray-100 text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-all z-10"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
