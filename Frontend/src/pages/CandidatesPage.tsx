@@ -87,73 +87,89 @@ export default function CandidatesPage() {
   return (
     <div>
       {/* Header with search and filters */}
-      <div className="mb-8">
+      <div className="mb-8 animate-slide-up">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Candidates</h2>
+          <div>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-purple-800 to-gray-900 bg-clip-text text-transparent">
+              Candidates
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">Find and compare your best talent</p>
+          </div>
           {selectedIds.length === MAX_SELECTIONS && (
             <button
               onClick={() => setShowCompare(true)}
-              className="px-5 py-2.5 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition-colors shadow-sm"
+              className="btn-primary px-6 py-3 text-white rounded-xl text-sm font-medium"
             >
-              Compare Selected
+              <span className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Compare Selected
+              </span>
             </button>
           )}
           {selectedIds.length === 1 && (
-            <span className="text-sm text-gray-500">
-              Select one more candidate to compare
+            <span className="text-sm text-purple-600 bg-purple-50 px-4 py-2 rounded-lg flex items-center gap-2">
+              <svg className="w-4 h-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              Select one more to compare
             </span>
           )}
         </div>
 
-        <div className="mt-5 flex flex-col sm:flex-row gap-3">
-          <input
-            type="text"
-            placeholder="Search by name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300"
-          />
-          <select
-            value={titleFilter}
-            onChange={(e) => setTitleFilter(e.target.value)}
-            className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 bg-white"
-          >
-            <option value="">All Professional Types</option>
-            {allTitles.map((title) => (
-              <option key={title} value={title}>
-                {title}
-              </option>
-            ))}
-          </select>
-          <select
-            value={skillFilter}
-            onChange={(e) => setSkillFilter(e.target.value)}
-            className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 bg-white"
-          >
-            <option value="">All Skills</option>
-            {allSkills.map((skill) => (
-              <option key={skill} value={skill}>
-                {skill}
-              </option>
-            ))}
-          </select>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 bg-white"
-          >
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="hired">Hired</option>
-          </select>
+        {/* Filters */}
+        <div className="mt-6 flex flex-col lg:flex-row gap-3">
+          <div className="relative flex-1">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search by name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 rounded-xl text-sm bg-white border border-gray-200 focus:outline-none focus:border-purple-400"
+            />
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <select
+              value={titleFilter}
+              onChange={(e) => setTitleFilter(e.target.value)}
+              className="px-4 py-3 rounded-xl text-sm bg-white border border-gray-200 focus:outline-none focus:border-purple-400 min-w-[180px]"
+            >
+              <option value="">All Professional Types</option>
+              {allTitles.map((title) => (
+                <option key={title} value={title}>
+                  {title}
+                </option>
+              ))}
+            </select>
+            <select
+              value={skillFilter}
+              onChange={(e) => setSkillFilter(e.target.value)}
+              className="px-4 py-3 rounded-xl text-sm bg-white border border-gray-200 focus:outline-none focus:border-purple-400 min-w-[140px]"
+            >
+              <option value="">All Skills</option>
+              {allSkills.map((skill) => (
+                <option key={skill} value={skill}>
+                  {skill}
+                </option>
+              ))}
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-3 rounded-xl text-sm bg-white border border-gray-200 focus:outline-none focus:border-purple-400 min-w-[130px]"
+            >
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="hired">Hired</option>
+            </select>
+          </div>
         </div>
       </div>
-
-      {/* Results count */}
-      <p className="text-sm text-gray-500 mb-6">
-        Showing {filteredCandidates.length} of {candidates.length} candidates
-      </p>
 
       {/* Card grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -171,8 +187,14 @@ export default function CandidatesPage() {
       </div>
 
       {filteredCandidates.length === 0 && (
-        <div className="text-center py-16 text-gray-500">
-          No candidates found matching your criteria.
+        <div className="text-center py-20 animate-fade-in">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-50 flex items-center justify-center">
+            <svg className="w-8 h-8 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No candidates found</h3>
+          <p className="text-gray-500 text-sm">Try adjusting your search or filter criteria</p>
         </div>
       )}
 

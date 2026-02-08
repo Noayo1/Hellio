@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import type { Candidate } from '../types';
 
 interface CompareModalProps {
@@ -8,92 +9,97 @@ interface CompareModalProps {
 export default function CompareModal({ candidates, onClose }: CompareModalProps) {
   const [c1, c2] = candidates;
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] overflow-y-auto">
       <div className="flex min-h-full items-center justify-center p-4">
         {/* Backdrop */}
         <div
-          className="fixed inset-0 bg-black/50 transition-opacity"
+          className="fixed inset-0 modal-backdrop animate-fade-in"
           onClick={onClose}
         />
 
         {/* Modal */}
-        <div className="relative bg-gradient-to-br from-white via-white to-purple-50 rounded-xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="relative bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto border border-gray-200">
+
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors z-10"
+            className="absolute top-4 right-4 p-2.5 rounded-xl bg-gray-100 text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-all z-10"
           >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
 
-          <div className="p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-8">Compare Candidates</h2>
+          <div className="p-8 relative">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-800 bg-clip-text text-transparent mb-8 flex items-center gap-3">
+              <svg className="w-7 h-7 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Compare Candidates
+            </h2>
 
-            <div className="grid grid-cols-2 gap-8">
-              {/* Headers */}
-              <div className="col-span-2 grid grid-cols-2 gap-8 divide-x divide-purple-200">
-                <div className="pr-8"><CompareHeader candidate={c1} /></div>
-                <div className="pl-8"><CompareHeader candidate={c2} /></div>
-              </div>
+            {/* Headers */}
+            <div className="grid grid-cols-2 gap-8 mb-6">
+              <CompareHeader candidate={c1} />
+              <CompareHeader candidate={c2} />
+            </div>
 
-              {/* Divider */}
-              <div className="col-span-2 border-t border-purple-200" />
+            {/* Content */}
+            <div className="space-y-6">
+                {/* Summary */}
+                <CompareSection title="Summary">
+                  <div className="grid grid-cols-2 gap-8">
+                    <p className="text-sm text-gray-700 leading-relaxed p-4 rounded-xl bg-gray-50/80 border border-gray-100">{c1.summary}</p>
+                    <p className="text-sm text-gray-700 leading-relaxed p-4 rounded-xl bg-gray-50/80 border border-gray-100">{c2.summary}</p>
+                  </div>
+                </CompareSection>
 
-              {/* Summary */}
-              <CompareSection title="Summary" className="col-span-2">
-                <div className="grid grid-cols-2 gap-8 divide-x divide-purple-200">
-                  <p className="text-sm text-gray-700 leading-relaxed pr-8">{c1.summary}</p>
-                  <p className="text-sm text-gray-700 leading-relaxed pl-8">{c2.summary}</p>
-                </div>
-              </CompareSection>
+                {/* Skills */}
+                <CompareSection title="Skills">
+                  <div className="grid grid-cols-2 gap-8">
+                    <SkillsList skills={c1.skills} compareWith={c2.skills} />
+                    <SkillsList skills={c2.skills} compareWith={c1.skills} />
+                  </div>
+                </CompareSection>
 
-              {/* Skills */}
-              <CompareSection title="Skills" className="col-span-2">
-                <div className="grid grid-cols-2 gap-8 divide-x divide-purple-200">
-                  <div className="pr-8"><SkillsList skills={c1.skills} compareWith={c2.skills} /></div>
-                  <div className="pl-8"><SkillsList skills={c2.skills} compareWith={c1.skills} /></div>
-                </div>
-              </CompareSection>
+                {/* Experience Details */}
+                <CompareSection title="Experience Details">
+                  <div className="grid grid-cols-2 gap-8">
+                    <ExperienceList experience={c1.experience} compareWith={c2.experience} />
+                    <ExperienceList experience={c2.experience} compareWith={c1.experience} />
+                  </div>
+                </CompareSection>
 
-              {/* Experience Details */}
-              <CompareSection title="Experience Details" className="col-span-2">
-                <div className="grid grid-cols-2 gap-8 divide-x divide-purple-200">
-                  <div className="pr-8"><ExperienceList experience={c1.experience} compareWith={c2.experience} /></div>
-                  <div className="pl-8"><ExperienceList experience={c2.experience} compareWith={c1.experience} /></div>
-                </div>
-              </CompareSection>
+                {/* Education */}
+                <CompareSection title="Education">
+                  <div className="grid grid-cols-2 gap-8">
+                    <EducationList education={c1.education} />
+                    <EducationList education={c2.education} />
+                  </div>
+                </CompareSection>
 
-              {/* Education */}
-              <CompareSection title="Education" className="col-span-2">
-                <div className="grid grid-cols-2 gap-8 divide-x divide-purple-200">
-                  <div className="pr-8"><EducationList education={c1.education} /></div>
-                  <div className="pl-8"><EducationList education={c2.education} /></div>
-                </div>
-              </CompareSection>
+                {/* Certifications */}
+                <CompareSection title="Certifications">
+                  <div className="grid grid-cols-2 gap-8">
+                    <CertificationsList certifications={c1.certifications} />
+                    <CertificationsList certifications={c2.certifications} />
+                  </div>
+                </CompareSection>
 
-              {/* Certifications */}
-              <CompareSection title="Certifications" className="col-span-2">
-                <div className="grid grid-cols-2 gap-8 divide-x divide-purple-200">
-                  <div className="pr-8"><CertificationsList certifications={c1.certifications} /></div>
-                  <div className="pl-8"><CertificationsList certifications={c2.certifications} /></div>
-                </div>
-              </CompareSection>
-
-              {/* Languages */}
-              <CompareSection title="Languages" className="col-span-2">
-                <div className="grid grid-cols-2 gap-8 divide-x divide-purple-200">
-                  <div className="pr-8"><LanguagesList languages={c1.languages} /></div>
-                  <div className="pl-8"><LanguagesList languages={c2.languages} /></div>
-                </div>
-              </CompareSection>
+                {/* Languages */}
+                <CompareSection title="Languages">
+                  <div className="grid grid-cols-2 gap-8">
+                    <LanguagesList languages={c1.languages} />
+                    <LanguagesList languages={c2.languages} />
+                  </div>
+                </CompareSection>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -101,11 +107,29 @@ function CompareHeader({ candidate }: { candidate: Candidate }) {
   const currentJob = candidate.experience[0];
   const yearsOfExp = calculateYearsOfExperience(candidate.experience);
   return (
-    <div className="pb-5">
-      <h3 className="text-xl font-bold text-gray-900">{candidate.name}</h3>
-      {currentJob && <p className="text-gray-600 mt-1">{currentJob.title}</p>}
-      <p className="text-sm text-gray-500 mt-2">{candidate.location}</p>
-      <p className="text-sm font-medium text-purple-600 mt-2">{yearsOfExp} years of experience</p>
+    <div className="p-5 rounded-xl bg-gradient-to-br from-white to-purple-50/50 border border-purple-100/50">
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-lg font-bold shadow-lg shadow-purple-200">
+          {candidate.name.charAt(0)}
+        </div>
+        <div className="flex-1">
+          <h3 className="text-xl font-bold text-gray-900">{candidate.name}</h3>
+          {currentJob && <p className="text-gray-600 mt-0.5">{currentJob.title}</p>}
+          <p className="text-sm text-gray-500 mt-2 flex items-center gap-2">
+            <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            {candidate.location}
+          </p>
+          <p className="text-sm font-medium text-purple-600 mt-2 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {yearsOfExp} years of experience
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -120,8 +144,9 @@ function CompareSection({
   className?: string;
 }) {
   return (
-    <div className={`py-5 border-b border-gray-100 ${className}`}>
-      <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+    <div className={`py-5 ${className}`}>
+      <h4 className="text-sm font-semibold text-purple-600 uppercase tracking-wide mb-4 flex items-center gap-2">
+        <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
         {title}
       </h4>
       {children}
@@ -144,14 +169,21 @@ function SkillsList({
         return (
           <span
             key={skill.name}
-            className={`px-3 py-1.5 rounded-md text-sm ${
+            className={`skill-tag px-3 py-1.5 rounded-lg text-sm ${
               isUnique
-                ? 'bg-green-50 text-green-700 border border-green-200'
-                : 'bg-purple-50 text-purple-700 border border-purple-100'
+                ? 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 text-emerald-700 border border-emerald-200'
+                : 'bg-gradient-to-r from-purple-50 to-purple-100/50 text-purple-700 border border-purple-100/50'
             }`}
           >
             {skill.name}
             {skill.level && <span className="text-xs ml-1 opacity-70">({skill.level})</span>}
+            {isUnique && (
+              <span className="ml-1.5 text-emerald-500">
+                <svg className="w-3 h-3 inline" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </span>
+            )}
           </span>
         );
       })}
@@ -169,7 +201,7 @@ function ExperienceList({
   const compareTitles = compareWith.map((e) => e.title.toLowerCase());
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {experience.map((exp, idx) => {
         const isCommon = compareTitles.some((title) =>
           title.includes(exp.title.toLowerCase()) || exp.title.toLowerCase().includes(title)
@@ -177,12 +209,16 @@ function ExperienceList({
         return (
           <div
             key={idx}
-            className={`${isCommon ? 'bg-purple-50 p-3 rounded-lg' : ''}`}
+            className={`p-4 rounded-xl border transition-all ${
+              isCommon
+                ? 'bg-purple-50/80 border-purple-200'
+                : 'bg-gray-50/80 border-gray-100'
+            }`}
           >
             <p className="font-medium text-gray-900 text-sm">{exp.title}</p>
             <p className="text-xs text-gray-600 mt-1">{exp.company}</p>
-            <p className="text-xs text-gray-500">
-              {exp.startDate} - {exp.endDate || 'Present'}
+            <p className="text-xs text-purple-500 font-medium mt-1">
+              {exp.startDate} — {exp.endDate || 'Present'}
             </p>
           </div>
         );
@@ -195,11 +231,11 @@ function EducationList({ education }: { education: Candidate['education'] }) {
   return (
     <div className="space-y-3">
       {education.map((edu, idx) => (
-        <div key={idx}>
+        <div key={idx} className="p-4 rounded-xl bg-gray-50/80 border border-gray-100">
           <p className="font-medium text-gray-900 text-sm">{edu.degree}</p>
-          <p className="text-xs text-gray-600">{edu.institution}</p>
-          <p className="text-xs text-gray-500">
-            {edu.startDate} - {edu.endDate || 'Present'}
+          <p className="text-xs text-gray-600 mt-1">{edu.institution}</p>
+          <p className="text-xs text-purple-500 font-medium mt-1">
+            {edu.startDate} — {edu.endDate || 'Present'}
           </p>
         </div>
       ))}
@@ -209,14 +245,23 @@ function EducationList({ education }: { education: Candidate['education'] }) {
 
 function CertificationsList({ certifications }: { certifications: Candidate['certifications'] }) {
   if (certifications.length === 0) {
-    return <p className="text-sm text-gray-400">No certifications</p>;
+    return (
+      <div className="p-4 rounded-xl bg-gray-50/80 border border-gray-100 text-center">
+        <p className="text-sm text-gray-400">No certifications</p>
+      </div>
+    );
   }
   return (
     <div className="space-y-2">
       {certifications.map((cert, idx) => (
-        <div key={idx} className="flex justify-between text-sm">
-          <span className="text-gray-700">{cert.name}</span>
-          <span className="text-gray-500">{cert.year}</span>
+        <div key={idx} className="flex justify-between items-center p-3 rounded-lg bg-gray-50/80 border border-gray-100">
+          <span className="text-sm text-gray-700 flex items-center gap-2">
+            <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+            </svg>
+            {cert.name}
+          </span>
+          <span className="text-xs text-purple-500 font-medium">{cert.year}</span>
         </div>
       ))}
     </div>
@@ -227,126 +272,10 @@ function LanguagesList({ languages }: { languages: Candidate['languages'] }) {
   return (
     <div className="flex flex-wrap gap-2">
       {languages.map((lang) => (
-        <span key={lang} className="px-3 py-1.5 bg-gray-100 rounded-md text-sm">
+        <span key={lang} className="px-4 py-2 bg-gray-50 rounded-xl text-sm border border-gray-100 text-gray-700">
           {lang}
         </span>
       ))}
-    </div>
-  );
-}
-
-function ExperienceComparison({ c1, c2 }: { c1: Candidate; c2: Candidate }) {
-  const years1 = calculateYearsOfExperience(c1.experience);
-  const years2 = calculateYearsOfExperience(c2.experience);
-
-  const titles1 = c1.experience.map((e) => e.title.toLowerCase());
-  const titles2 = c2.experience.map((e) => e.title.toLowerCase());
-
-  // Find common role types (fuzzy match on title keywords)
-  const commonRoles: string[] = [];
-  const unique1: string[] = [];
-  const unique2: string[] = [];
-
-  c1.experience.forEach((exp) => {
-    const hasMatch = titles2.some((t) =>
-      t.includes(exp.title.toLowerCase()) || exp.title.toLowerCase().includes(t)
-    );
-    if (hasMatch && !commonRoles.includes(exp.title)) {
-      commonRoles.push(exp.title);
-    } else if (!hasMatch) {
-      unique1.push(exp.title);
-    }
-  });
-
-  c2.experience.forEach((exp) => {
-    const hasMatch = titles1.some((t) =>
-      t.includes(exp.title.toLowerCase()) || exp.title.toLowerCase().includes(t)
-    );
-    if (!hasMatch) {
-      unique2.push(exp.title);
-    }
-  });
-
-  return (
-    <div className="space-y-6">
-      {/* Years comparison */}
-      <div className="grid grid-cols-2 gap-8">
-        <div className="bg-purple-50 rounded-lg p-4 text-center">
-          <p className="text-3xl font-bold text-purple-700">{years1}</p>
-          <p className="text-sm text-purple-600">years total</p>
-        </div>
-        <div className="bg-purple-50 rounded-lg p-4 text-center">
-          <p className="text-3xl font-bold text-purple-700">{years2}</p>
-          <p className="text-sm text-purple-600">years total</p>
-        </div>
-      </div>
-
-      {/* Common experience */}
-      {commonRoles.length > 0 && (
-        <div>
-          <h5 className="text-sm font-medium text-gray-700 mb-2">Common Experience</h5>
-          <div className="flex flex-wrap gap-2">
-            {commonRoles.map((role) => (
-              <span
-                key={role}
-                className="px-3 py-1.5 bg-purple-100 text-purple-700 border border-purple-200 rounded-md text-sm"
-              >
-                {role}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Unique skills */}
-      <UniqueSkillsComparison c1={c1} c2={c2} />
-    </div>
-  );
-}
-
-function UniqueSkillsComparison({ c1, c2 }: { c1: Candidate; c2: Candidate }) {
-  const skills1 = c1.skills.map((s) => s.name.toLowerCase());
-  const skills2 = c2.skills.map((s) => s.name.toLowerCase());
-
-  const uniqueSkills1 = c1.skills.filter((s) => !skills2.includes(s.name.toLowerCase()));
-  const uniqueSkills2 = c2.skills.filter((s) => !skills1.includes(s.name.toLowerCase()));
-
-  return (
-    <div className="grid grid-cols-2 gap-8 divide-x divide-purple-200">
-      <div className="pr-8">
-        <h5 className="text-sm font-medium text-gray-700 mb-2">Unique Skills - {c1.name.split(' ')[0]}</h5>
-        {uniqueSkills1.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {uniqueSkills1.map((skill) => (
-              <span
-                key={skill.name}
-                className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-md text-sm"
-              >
-                {skill.name}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-gray-400">No unique skills</p>
-        )}
-      </div>
-      <div className="pl-8">
-        <h5 className="text-sm font-medium text-gray-700 mb-2">Unique Skills - {c2.name.split(' ')[0]}</h5>
-        {uniqueSkills2.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {uniqueSkills2.map((skill) => (
-              <span
-                key={skill.name}
-                className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-md text-sm"
-              >
-                {skill.name}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-gray-400">No unique skills</p>
-        )}
-      </div>
     </div>
   );
 }

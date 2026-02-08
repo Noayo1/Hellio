@@ -35,21 +35,34 @@ export default function PositionsPage() {
   return (
     <div>
       {/* Header with search and filters */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900">Positions</h2>
+      <div className="mb-8 animate-slide-up">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-purple-800 to-gray-900 bg-clip-text text-transparent">
+              Positions
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">Manage your open roles and hiring pipeline</p>
+          </div>
+        </div>
 
-        <div className="mt-5 flex flex-col sm:flex-row gap-3">
-          <input
-            type="text"
-            placeholder="Search by title or company..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300"
-          />
+        {/* Filters */}
+        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search by title or company..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 rounded-xl text-sm bg-white border border-gray-200 focus:outline-none focus:border-purple-400"
+            />
+          </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 bg-white"
+            className="px-4 py-3 rounded-xl text-sm bg-white border border-gray-200 focus:outline-none focus:border-purple-400 min-w-[140px]"
           >
             <option value="">All Status</option>
             <option value="open">Open</option>
@@ -58,11 +71,6 @@ export default function PositionsPage() {
           </select>
         </div>
       </div>
-
-      {/* Results count */}
-      <p className="text-sm text-gray-500 mb-6">
-        Showing {filteredPositions.length} position{filteredPositions.length !== 1 ? 's' : ''}
-      </p>
 
       {/* Card grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -77,8 +85,14 @@ export default function PositionsPage() {
       </div>
 
       {filteredPositions.length === 0 && (
-        <div className="text-center py-16 text-gray-500">
-          No positions found matching your criteria.
+        <div className="text-center py-20 animate-fade-in">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-50 flex items-center justify-center">
+            <svg className="w-8 h-8 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No positions found</h3>
+          <p className="text-gray-500 text-sm">Try adjusting your search or filter criteria</p>
         </div>
       )}
 
