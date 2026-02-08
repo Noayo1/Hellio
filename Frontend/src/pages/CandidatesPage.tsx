@@ -11,7 +11,7 @@ export default function CandidatesPage() {
   const positions = positionsData as Position[];
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [positionFilter, setPositionFilter] = useState<string>('');
+  const [titleFilter, setTitleFilter] = useState<string>('');
   const [skillFilter, setSkillFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('active');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -25,16 +25,27 @@ export default function CandidatesPage() {
     return Array.from(skills).sort();
   }, [candidates]);
 
+  // Get all unique job titles from candidates' current experience
+  const allTitles = useMemo(() => {
+    const titles = new Set<string>();
+    candidates.forEach((c) => {
+      if (c.experience.length > 0) {
+        titles.add(c.experience[0].title);
+      }
+    });
+    return Array.from(titles).sort();
+  }, [candidates]);
+
   // Filter candidates
   const filteredCandidates = useMemo(() => {
     return candidates.filter((c) => {
       if (statusFilter && c.status !== statusFilter) return false;
       if (searchTerm && !c.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-      if (positionFilter && !c.positionIds.includes(positionFilter)) return false;
+      if (titleFilter && (c.experience.length === 0 || c.experience[0].title !== titleFilter)) return false;
       if (skillFilter && !c.skills.some((s) => s.name === skillFilter)) return false;
       return true;
     });
-  }, [candidates, searchTerm, positionFilter, skillFilter, statusFilter]);
+  }, [candidates, searchTerm, titleFilter, skillFilter, statusFilter]);
 
   const MAX_SELECTIONS = 2;
 
@@ -103,14 +114,14 @@ export default function CandidatesPage() {
             className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300"
           />
           <select
-            value={positionFilter}
-            onChange={(e) => setPositionFilter(e.target.value)}
+            value={titleFilter}
+            onChange={(e) => setTitleFilter(e.target.value)}
             className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 bg-white"
           >
-            <option value="">All Positions</option>
-            {positions.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.title}
+            <option value="">All Professional Types</option>
+            {allTitles.map((title) => (
+              <option key={title} value={title}>
+                {title}
               </option>
             ))}
           </select>
