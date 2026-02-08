@@ -1,0 +1,9 @@
+Design Choices & Considerations
+
+The HR Portal was built with React, TypeScript, and Tailwind CSS to ensure a clear separation between data, logic, and UI, while keeping the codebase simple and easy to extend.
+
+A clean, light visual style was chosen to prioritize readability and reduce cognitive load for non-technical HR users. White cards, soft accents, and generous spacing help users scan and compare candidates quickly without feeling overwhelmed.
+
+Candidate and position cards follow a consistent structure to make comparisons intuitive. Profiles open in a structured modal view to keep context while exploring details. Interactive feedback is subtle and purposeful, helping users understand selections without visual noise.
+
+Optional fields render only when data exists, allowing the UI to adapt gracefully to different candidate profiles and support future schema changes without redesign.
