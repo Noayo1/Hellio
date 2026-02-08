@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { Candidate } from '../types';
 
 const STATUS_CONFIG = {
@@ -15,7 +16,7 @@ interface CandidateCardProps {
   positionsCount: number;
 }
 
-export default function CandidateCard({
+const CandidateCard = memo(function CandidateCard({
   candidate,
   selected,
   disabled = false,
@@ -122,7 +123,9 @@ export default function CandidateCard({
       </div>
     </div>
   );
-}
+});
+
+export default CandidateCard;
 
 function calculateYearsOfExperience(experience: Candidate['experience']): number {
   if (experience.length === 0) return 0;

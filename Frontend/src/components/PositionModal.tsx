@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom';
+import { useEffect } from 'react';
 import type { Position, Candidate } from '../types';
 
 interface PositionModalProps {
@@ -10,6 +11,15 @@ interface PositionModalProps {
 export default function PositionModal({ position, candidates, onClose }: PositionModalProps) {
   const mustHave = position.requirements.filter((r) => r.required);
   const niceToHave = position.requirements.filter((r) => !r.required);
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
 
   return createPortal(
     <div className="fixed inset-0 z-[100] overflow-y-auto">

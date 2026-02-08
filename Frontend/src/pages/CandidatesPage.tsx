@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { Candidate, Position } from '../types';
 import CandidateCard from '../components/CandidateCard';
 import CandidateModal from '../components/CandidateModal';
@@ -47,9 +47,9 @@ export default function CandidatesPage() {
     });
   }, [candidates, searchTerm, titleFilter, skillFilter, statusFilter]);
 
-  const MAX_SELECTIONS = 2;
+  const MAX_SELECTIONS = 2 as const;
 
-  const handleSelect = (id: string) => {
+  const handleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const isAlreadySelected = prev.includes(id);
       if (isAlreadySelected) {
@@ -60,9 +60,9 @@ export default function CandidatesPage() {
       }
       return [...prev, id];
     });
-  };
+  }, []);
 
-  const handleAssignPosition = (candidateId: string, positionId: string, assign: boolean) => {
+  const handleAssignPosition = useCallback((candidateId: string, positionId: string, assign: boolean) => {
     setCandidates((prev) => {
       const updated = prev.map((c) => {
         if (c.id !== candidateId) return c;
@@ -73,16 +73,21 @@ export default function CandidatesPage() {
       });
 
       // Sync activeCandidate with updated data
-      if (activeCandidate?.id === candidateId) {
-        const updatedCandidate = updated.find(c => c.id === candidateId);
-        if (updatedCandidate) setActiveCandidate(updatedCandidate);
-      }
+      setActiveCandidate((currentActive) => {
+        if (currentActive?.id === candidateId) {
+          return updated.find(c => c.id === candidateId) ?? currentActive;
+        }
+        return currentActive;
+      });
 
       return updated;
     });
-  };
+  }, []);
 
-  const selectedCandidates = candidates.filter((c) => selectedIds.includes(c.id));
+  const selectedCandidates = useMemo(
+    () => candidates.filter((c) => selectedIds.includes(c.id)),
+    [candidates, selectedIds]
+  );
 
   return (
     <div>

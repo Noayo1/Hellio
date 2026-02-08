@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom';
+import { useEffect } from 'react';
 import type { Candidate } from '../types';
 
 interface CompareModalProps {
@@ -8,6 +9,15 @@ interface CompareModalProps {
 
 export default function CompareModal({ candidates, onClose }: CompareModalProps) {
   const [c1, c2] = candidates;
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
 
   return createPortal(
     <div className="fixed inset-0 z-[100] overflow-y-auto">

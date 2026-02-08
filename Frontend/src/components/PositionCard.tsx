@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { Position } from '../types';
 
 const STATUS_CONFIG = {
@@ -51,7 +52,7 @@ interface PositionCardProps {
   candidatesCount: number;
 }
 
-export default function PositionCard({
+const PositionCard = memo(function PositionCard({
   position,
   onClick,
   candidatesCount,
@@ -135,4 +136,6 @@ export default function PositionCard({
       </div>
     </div>
   );
-}
+});
+
+export default PositionCard;

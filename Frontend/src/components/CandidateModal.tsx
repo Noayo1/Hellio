@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom';
+import { useEffect } from 'react';
 import type { Candidate, Position } from '../types';
 
 interface CandidateModalProps {
@@ -18,6 +19,15 @@ export default function CandidateModal({
     const isAssigned = candidate.positionIds.includes(positionId);
     onAssignPosition(candidate.id, positionId, !isAssigned);
   };
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
 
   return createPortal(
     <div className="fixed inset-0 z-[100] overflow-y-auto">
