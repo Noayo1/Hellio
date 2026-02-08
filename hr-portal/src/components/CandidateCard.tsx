@@ -1,5 +1,11 @@
 import type { Candidate } from '../types';
 
+const STATUS_COLORS = {
+  active: 'bg-green-100 text-green-700',
+  inactive: 'bg-gray-100 text-gray-600',
+  hired: 'bg-purple-100 text-purple-700',
+} as const;
+
 interface CandidateCardProps {
   candidate: Candidate;
   selected: boolean;
@@ -20,12 +26,7 @@ export default function CandidateCard({
   const currentJob = candidate.experience[0];
   const yearsOfExp = calculateYearsOfExperience(candidate.experience);
   const topSkills = candidate.skills.slice(0, 3);
-
-  const statusColors = {
-    active: 'bg-green-100 text-green-700',
-    inactive: 'bg-gray-100 text-gray-600',
-    hired: 'bg-purple-100 text-purple-700',
-  };
+  const isCheckboxDisabled = disabled && !selected;
 
   return (
     <div
@@ -37,19 +38,19 @@ export default function CandidateCard({
         <input
           type="checkbox"
           checked={selected}
-          disabled={disabled && !selected}
+          disabled={isCheckboxDisabled}
           onChange={(e) => {
             e.stopPropagation();
             onSelect(candidate.id);
           }}
           className={`mt-1 h-4 w-4 rounded border-gray-300 text-purple-500 focus:ring-purple-400 ${
-            disabled && !selected ? 'opacity-40 cursor-not-allowed' : ''
+            isCheckboxDisabled ? 'opacity-40 cursor-not-allowed' : ''
           }`}
         />
         <div className="flex-1 min-w-0" onClick={onClick}>
           <div className="flex items-center justify-between gap-3">
             <h3 className="font-semibold text-gray-900 truncate text-base">{candidate.name}</h3>
-            <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[candidate.status]}`}>
+            <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${STATUS_COLORS[candidate.status]}`}>
               {candidate.status}
             </span>
           </div>

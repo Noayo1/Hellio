@@ -36,13 +36,15 @@ export default function CandidatesPage() {
     });
   }, [candidates, searchTerm, positionFilter, skillFilter, statusFilter]);
 
+  const MAX_SELECTIONS = 2;
+
   const handleSelect = (id: string) => {
     setSelectedIds((prev) => {
-      if (prev.includes(id)) {
+      const isAlreadySelected = prev.includes(id);
+      if (isAlreadySelected) {
         return prev.filter((i) => i !== id);
       }
-      // Limit to 2 selections for comparison
-      if (prev.length >= 2) {
+      if (prev.length >= MAX_SELECTIONS) {
         return prev;
       }
       return [...prev, id];
@@ -77,7 +79,7 @@ export default function CandidatesPage() {
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">Candidates</h2>
-          {selectedIds.length === 2 && (
+          {selectedIds.length === MAX_SELECTIONS && (
             <button
               onClick={() => setShowCompare(true)}
               className="px-5 py-2.5 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition-colors shadow-sm"
@@ -149,7 +151,7 @@ export default function CandidatesPage() {
             key={candidate.id}
             candidate={candidate}
             selected={selectedIds.includes(candidate.id)}
-            disabled={selectedIds.length >= 2}
+            disabled={selectedIds.length >= MAX_SELECTIONS}
             onSelect={handleSelect}
             onClick={() => setActiveCandidate(candidate)}
             positionsCount={candidate.positionIds.length}
@@ -174,7 +176,7 @@ export default function CandidatesPage() {
       )}
 
       {/* Compare Modal */}
-      {showCompare && selectedCandidates.length >= 2 && (
+      {showCompare && selectedCandidates.length >= MAX_SELECTIONS && (
         <CompareModal
           candidates={[selectedCandidates[0], selectedCandidates[1]]}
           onClose={() => setShowCompare(false)}

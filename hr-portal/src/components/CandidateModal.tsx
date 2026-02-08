@@ -57,24 +57,10 @@ export default function CandidateModal({
 
               <div className="flex gap-3 mt-4">
                 {candidate.linkedIn && (
-                  <a
-                    href={`https://${candidate.linkedIn}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
-                  >
-                    LinkedIn
-                  </a>
+                  <ExternalLink href={`https://${candidate.linkedIn}`}>LinkedIn</ExternalLink>
                 )}
                 {candidate.github && (
-                  <a
-                    href={`https://${candidate.github}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
-                  >
-                    GitHub
-                  </a>
+                  <ExternalLink href={`https://${candidate.github}`}>GitHub</ExternalLink>
                 )}
                 <a
                   href={candidate.cvFile}
@@ -218,5 +204,18 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
       {children}
     </div>
+  );
+}
+
+function ExternalLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
+    >
+      {children}
+    </a>
   );
 }

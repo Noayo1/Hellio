@@ -80,20 +80,8 @@ export default function CompareModal({ candidates, onClose }: CompareModalProps)
               {/* Languages */}
               <CompareSection title="Languages" className="col-span-2">
                 <div className="grid grid-cols-2 gap-8">
-                  <div className="flex flex-wrap gap-2">
-                    {c1.languages.map((lang) => (
-                      <span key={lang} className="px-3 py-1.5 bg-gray-100 rounded-md text-sm">
-                        {lang}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {c2.languages.map((lang) => (
-                      <span key={lang} className="px-3 py-1.5 bg-gray-100 rounded-md text-sm">
-                        {lang}
-                      </span>
-                    ))}
-                  </div>
+                  <LanguagesList languages={c1.languages} />
+                  <LanguagesList languages={c2.languages} />
                 </div>
               </CompareSection>
             </div>
@@ -207,6 +195,18 @@ function CertificationsList({ certifications }: { certifications: Candidate['cer
           <span className="text-gray-700">{cert.name}</span>
           <span className="text-gray-500">{cert.year}</span>
         </div>
+      ))}
+    </div>
+  );
+}
+
+function LanguagesList({ languages }: { languages: Candidate['languages'] }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {languages.map((lang) => (
+        <span key={lang} className="px-3 py-1.5 bg-gray-100 rounded-md text-sm">
+          {lang}
+        </span>
       ))}
     </div>
   );
