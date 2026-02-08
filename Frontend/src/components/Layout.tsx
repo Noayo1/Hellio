@@ -22,9 +22,9 @@ function Logo() {
           </filter>
         </defs>
         <circle cx="14" cy="12" r="6" fill="url(#logoGrad1)" filter="url(#glow)" className="origin-center transition-all duration-300 group-hover:scale-110" />
-        <circle cx="26" cy="12" r="6" fill="url(#logoGrad2)" className="origin-center transition-all duration-300 group-hover:scale-110" style={{ animationDelay: '0.1s' }} />
-        <ellipse cx="14" cy="30" rx="8" ry="6" fill="url(#logoGrad1)" filter="url(#glow)" className="origin-center transition-all duration-300 group-hover:scale-105" style={{ animationDelay: '0.2s' }} />
-        <ellipse cx="26" cy="30" rx="8" ry="6" fill="url(#logoGrad2)" className="origin-center transition-all duration-300 group-hover:scale-105" style={{ animationDelay: '0.3s' }} />
+        <circle cx="26" cy="12" r="6" fill="url(#logoGrad2)" className="origin-center transition-all duration-300 group-hover:scale-110" />
+        <ellipse cx="14" cy="30" rx="8" ry="6" fill="url(#logoGrad1)" filter="url(#glow)" className="origin-center transition-all duration-300 group-hover:scale-105" />
+        <ellipse cx="26" cy="30" rx="8" ry="6" fill="url(#logoGrad2)" className="origin-center transition-all duration-300 group-hover:scale-105" />
       </svg>
       <div className="absolute inset-0 bg-purple-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
     </div>

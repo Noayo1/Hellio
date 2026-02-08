@@ -1,24 +1,9 @@
 import type { Candidate } from '../types';
 
 const STATUS_CONFIG = {
-  active: {
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-600',
-    dot: 'bg-emerald-500',
-    glow: 'shadow-emerald-200',
-  },
-  inactive: {
-    bg: 'bg-gray-100',
-    text: 'text-gray-500',
-    dot: 'bg-gray-400',
-    glow: '',
-  },
-  hired: {
-    bg: 'bg-purple-50',
-    text: 'text-purple-600',
-    dot: 'bg-purple-500',
-    glow: 'shadow-purple-200',
-  },
+  active: { bg: 'bg-emerald-50', text: 'text-emerald-600', dot: 'bg-emerald-500' },
+  inactive: { bg: 'bg-gray-100', text: 'text-gray-500', dot: 'bg-gray-400' },
+  hired: { bg: 'bg-purple-50', text: 'text-purple-600', dot: 'bg-purple-500' },
 } as const;
 
 interface CandidateCardProps {
@@ -95,11 +80,10 @@ export default function CandidateCard({
           </p>
 
           <div className="flex flex-wrap gap-2 mt-4">
-            {topSkills.map((skill, idx) => (
+            {topSkills.map((skill) => (
               <span
                 key={skill.name}
                 className="skill-tag inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gradient-to-r from-purple-50 to-purple-100/50 text-purple-700 border border-purple-100/50"
-                style={{ animationDelay: `${idx * 50}ms` }}
               >
                 {skill.name}
               </span>

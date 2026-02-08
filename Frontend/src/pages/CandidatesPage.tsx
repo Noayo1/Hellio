@@ -87,7 +87,7 @@ export default function CandidatesPage() {
   return (
     <div>
       {/* Header with search and filters */}
-      <div className="mb-8 animate-slide-up">
+      <div className="mb-8">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-purple-800 to-gray-900 bg-clip-text text-transparent">
