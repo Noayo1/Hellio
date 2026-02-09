@@ -9,6 +9,47 @@ if (!TEST_PASSWORD) {
   throw new Error('TEST_PASSWORD environment variable is required');
 }
 
+// Helper function to seed a test position with normalized data
+async function seedTestPosition(positionId: string = 'p1') {
+  // Insert position
+  await pool.query(
+    `INSERT INTO positions (id, title, company, location, status, description, experience_years, work_type, salary, contact_name, contact_email)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+    [
+      positionId,
+      'Senior DevOps Engineer',
+      'Tech Corp',
+      'Tel Aviv',
+      'open',
+      'We are looking for a senior DevOps engineer',
+      5,
+      'hybrid',
+      'Competitive',
+      'John HR',
+      'hr@techcorp.com',
+    ]
+  );
+
+  // Insert skills and link to position
+  const skillNames = ['AWS', 'Kubernetes', 'Docker'];
+  for (const skillName of skillNames) {
+    const skillResult = await pool.query(
+      `INSERT INTO skills (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id`,
+      [skillName]
+    );
+    await pool.query(`INSERT INTO position_skills (position_id, skill_id) VALUES ($1, $2)`, [
+      positionId,
+      skillResult.rows[0].id,
+    ]);
+  }
+
+  // Insert requirement
+  await pool.query(
+    `INSERT INTO position_requirements (position_id, text, required, sort_order) VALUES ($1, $2, $3, $4)`,
+    [positionId, '5+ years experience', true, 0]
+  );
+}
+
 describe('Positions API', () => {
   let authToken: string;
 
@@ -16,10 +57,12 @@ describe('Positions API', () => {
     const passwordHash = await bcrypt.hash(TEST_PASSWORD, 10);
 
     // Seed admin user
-    await pool.query(
-      `INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4)`,
-      ['admin@hellio.com', passwordHash, 'Admin', 'admin']
-    );
+    await pool.query(`INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4)`, [
+      'admin@hellio.com',
+      passwordHash,
+      'Admin',
+      'admin',
+    ]);
 
     // Get auth token
     const loginResponse = await request(app)
@@ -28,25 +71,7 @@ describe('Positions API', () => {
     authToken = loginResponse.body.token;
 
     // Seed test position
-    await pool.query(
-      `INSERT INTO positions (id, title, company, location, status, description, requirements, skills, experience_years, work_type, salary, contact_name, contact_email)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-      [
-        'p1',
-        'Senior DevOps Engineer',
-        'Tech Corp',
-        'Tel Aviv',
-        'open',
-        'We are looking for a senior DevOps engineer',
-        JSON.stringify([{ text: '5+ years experience', required: true }]),
-        JSON.stringify(['AWS', 'Kubernetes', 'Docker']),
-        5,
-        'hybrid',
-        'Competitive',
-        'John HR',
-        'hr@techcorp.com',
-      ]
-    );
+    await seedTestPosition('p1');
   });
 
   describe('GET /api/positions', () => {
@@ -56,9 +81,7 @@ describe('Positions API', () => {
     });
 
     it('should return array of positions', async () => {
-      const response = await request(app)
-        .get('/api/positions')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/positions').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
@@ -66,9 +89,7 @@ describe('Positions API', () => {
     });
 
     it('should return positions with correct structure', async () => {
-      const response = await request(app)
-        .get('/api/positions')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/positions').set('Authorization', `Bearer ${authToken}`);
 
       const position = response.body[0];
       expect(position).toHaveProperty('id');
@@ -84,13 +105,33 @@ describe('Positions API', () => {
       expect(position).toHaveProperty('contactName');
       expect(position).toHaveProperty('contactEmail');
     });
+
+    it('should return skills as string array', async () => {
+      const response = await request(app).get('/api/positions').set('Authorization', `Bearer ${authToken}`);
+
+      const position = response.body[0];
+      expect(Array.isArray(position.skills)).toBe(true);
+      expect(position.skills).toContain('AWS');
+      expect(position.skills).toContain('Kubernetes');
+      expect(position.skills).toContain('Docker');
+    });
+
+    it('should return requirements with text and required', async () => {
+      const response = await request(app).get('/api/positions').set('Authorization', `Bearer ${authToken}`);
+
+      const position = response.body[0];
+      expect(Array.isArray(position.requirements)).toBe(true);
+      expect(position.requirements.length).toBeGreaterThan(0);
+      expect(position.requirements[0]).toHaveProperty('text');
+      expect(position.requirements[0]).toHaveProperty('required');
+      expect(position.requirements[0].text).toBe('5+ years experience');
+      expect(position.requirements[0].required).toBe(true);
+    });
   });
 
   describe('GET /api/positions/:id', () => {
     it('should return single position by id', async () => {
-      const response = await request(app)
-        .get('/api/positions/p1')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/positions/p1').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.id).toBe('p1');
@@ -98,16 +139,14 @@ describe('Positions API', () => {
     });
 
     it('should return 404 for non-existent position', async () => {
-      const response = await request(app)
-        .get('/api/positions/nonexistent')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/positions/nonexistent').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(404);
     });
   });
 
   describe('PUT /api/positions/:id', () => {
-    it('should update position', async () => {
+    it('should update position basic fields', async () => {
       const response = await request(app)
         .put('/api/positions/p1')
         .set('Authorization', `Bearer ${authToken}`)
@@ -129,6 +168,61 @@ describe('Positions API', () => {
       expect(response.status).toBe(200);
       expect(response.body.title).toBe('Updated Title');
       expect(response.body.status).toBe('closed');
+    });
+
+    it('should update position skills', async () => {
+      const response = await request(app)
+        .put('/api/positions/p1')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          title: 'Senior DevOps Engineer',
+          company: 'Tech Corp',
+          location: 'Tel Aviv',
+          status: 'open',
+          description: 'We are looking for a senior DevOps engineer',
+          requirements: [{ text: '5+ years experience', required: true }],
+          skills: ['Python', 'Go', 'Terraform'],
+          experienceYears: 5,
+          workType: 'hybrid',
+          salary: 'Competitive',
+          contactName: 'John HR',
+          contactEmail: 'hr@techcorp.com',
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.skills).toContain('Python');
+      expect(response.body.skills).toContain('Go');
+      expect(response.body.skills).toContain('Terraform');
+      expect(response.body.skills).not.toContain('AWS');
+    });
+
+    it('should update position requirements', async () => {
+      const response = await request(app)
+        .put('/api/positions/p1')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          title: 'Senior DevOps Engineer',
+          company: 'Tech Corp',
+          location: 'Tel Aviv',
+          status: 'open',
+          description: 'We are looking for a senior DevOps engineer',
+          requirements: [
+            { text: 'New requirement 1', required: true },
+            { text: 'New requirement 2', required: false },
+          ],
+          skills: ['AWS', 'Kubernetes', 'Docker'],
+          experienceYears: 5,
+          workType: 'hybrid',
+          salary: 'Competitive',
+          contactName: 'John HR',
+          contactEmail: 'hr@techcorp.com',
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.requirements.length).toBe(2);
+      expect(response.body.requirements[0].text).toBe('New requirement 1');
+      expect(response.body.requirements[1].text).toBe('New requirement 2');
+      expect(response.body.requirements[1].required).toBe(false);
     });
 
     it('should return 404 when updating non-existent position', async () => {
@@ -160,10 +254,12 @@ describe('Positions API', () => {
       const passwordHash = await bcrypt.hash(TEST_PASSWORD, 10);
 
       // Seed viewer user
-      await pool.query(
-        `INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4)`,
-        ['viewer@hellio.com', passwordHash, 'Viewer', 'viewer']
-      );
+      await pool.query(`INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4)`, [
+        'viewer@hellio.com',
+        passwordHash,
+        'Viewer',
+        'viewer',
+      ]);
 
       // Get viewer auth token
       const loginResponse = await request(app)
@@ -173,18 +269,14 @@ describe('Positions API', () => {
     });
 
     it('should allow viewer to read positions', async () => {
-      const response = await request(app)
-        .get('/api/positions')
-        .set('Authorization', `Bearer ${viewerToken}`);
+      const response = await request(app).get('/api/positions').set('Authorization', `Bearer ${viewerToken}`);
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
     });
 
     it('should allow viewer to read single position', async () => {
-      const response = await request(app)
-        .get('/api/positions/p1')
-        .set('Authorization', `Bearer ${viewerToken}`);
+      const response = await request(app).get('/api/positions/p1').set('Authorization', `Bearer ${viewerToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.id).toBe('p1');
