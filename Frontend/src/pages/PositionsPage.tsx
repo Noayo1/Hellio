@@ -1,16 +1,37 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { Candidate, Position } from '../types';
 import PositionCard from '../components/PositionCard';
 import PositionModal from '../components/PositionModal';
-import candidatesData from '../data/candidates.json';
-import positionsData from '../data/positions.json';
+import { api } from '../api/client';
 
 export default function PositionsPage() {
-  const candidates = candidatesData as Candidate[];
-  const [positions] = useState<Position[]>(positionsData as Position[]);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('open');
   const [activePosition, setActivePosition] = useState<Position | null>(null);
+
+  // Fetch data from API
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [candidatesData, positionsData] = await Promise.all([
+          api.getCandidates(),
+          api.getPositions(),
+        ]);
+        setCandidates(candidatesData as Candidate[]);
+        setPositions(positionsData as Position[]);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   // Filter positions
   const filteredPositions = useMemo(() => {
@@ -35,6 +56,36 @@ export default function PositionsPage() {
   const getCandidatesForPosition = useCallback((positionId: string) => {
     return candidates.filter((c) => c.positionIds.includes(positionId));
   }, [candidates]);
+
+  // Handle position update
+  const handleUpdatePosition = useCallback(async (updatedPosition: Position) => {
+    try {
+      const result = await api.updatePosition(updatedPosition.id, updatedPosition);
+      setPositions((prev) =>
+        prev.map((p) => (p.id === updatedPosition.id ? (result as Position) : p))
+      );
+      setActivePosition(result as Position);
+    } catch (err) {
+      console.error('Failed to update position:', err);
+      throw err;
+    }
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-gray-500">Loading positions...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-red-500">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -106,6 +157,7 @@ export default function PositionsPage() {
           position={activePosition}
           candidates={getCandidatesForPosition(activePosition.id)}
           onClose={() => setActivePosition(null)}
+          onUpdate={handleUpdatePosition}
         />
       )}
     </div>

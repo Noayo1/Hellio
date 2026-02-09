@@ -17,8 +17,8 @@ describe('Files API', () => {
     // Seed admin user
     const passwordHash = await bcrypt.hash(TEST_PASSWORD, 10);
     await pool.query(
-      `INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3)`,
-      ['admin@hellio.com', passwordHash, 'Admin']
+      `INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4)`,
+      ['admin@hellio.com', passwordHash, 'Admin', 'admin']
     );
 
     // Get auth token

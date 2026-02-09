@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 function Logo() {
   return (
@@ -32,6 +33,8 @@ function Logo() {
 }
 
 export default function Layout() {
+  const { user, logout } = useAuth();
+
   return (
     <div className="min-h-screen gradient-mesh relative">
       <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50">
@@ -85,6 +88,16 @@ export default function Layout() {
                   </span>
                 </NavLink>
               </nav>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">{user?.name}</span>
+              <button
+                onClick={logout}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-purple-600 hover:bg-purple-50/50 rounded-lg transition-colors"
+              >
+                Logout
+              </button>
             </div>
           </div>
         </div>

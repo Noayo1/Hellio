@@ -1,25 +1,60 @@
 import { createPortal } from 'react-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { Position, Candidate } from '../types';
 
 interface PositionModalProps {
   position: Position;
   candidates: Candidate[];
   onClose: () => void;
+  onUpdate?: (position: Position) => Promise<void>;
 }
 
-export default function PositionModal({ position, candidates, onClose }: PositionModalProps) {
+export default function PositionModal({ position, candidates, onClose, onUpdate }: PositionModalProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedPosition, setEditedPosition] = useState<Position>(position);
+  const [saving, setSaving] = useState(false);
+
   const mustHave = position.requirements.filter((r) => r.required);
   const niceToHave = position.requirements.filter((r) => !r.required);
 
   // Close modal on Escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (isEditing) {
+          setIsEditing(false);
+          setEditedPosition(position);
+        } else {
+          onClose();
+        }
+      }
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [onClose]);
+  }, [onClose, isEditing, position]);
+
+  // Update editedPosition when position changes
+  useEffect(() => {
+    setEditedPosition(position);
+  }, [position]);
+
+  const handleSave = async () => {
+    if (!onUpdate) return;
+    setSaving(true);
+    try {
+      await onUpdate(editedPosition);
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Failed to save:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditedPosition(position);
+    setIsEditing(false);
+  };
 
   return createPortal(
     <div className="fixed inset-0 z-[100] overflow-y-auto">
@@ -55,45 +90,157 @@ export default function PositionModal({ position, candidates, onClose }: Positio
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-800 bg-clip-text text-transparent">
-                      {position.title}
-                    </h2>
-                    <p className="text-lg text-gray-600 mt-0.5">{position.company}</p>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editedPosition.title}
+                        onChange={(e) => setEditedPosition({ ...editedPosition, title: e.target.value })}
+                        className="text-2xl font-bold border-b-2 border-purple-300 focus:border-purple-500 outline-none bg-transparent"
+                      />
+                    ) : (
+                      <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-800 bg-clip-text text-transparent">
+                        {position.title}
+                      </h2>
+                    )}
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editedPosition.company}
+                        onChange={(e) => setEditedPosition({ ...editedPosition, company: e.target.value })}
+                        className="text-lg text-gray-600 mt-0.5 border-b border-gray-300 focus:border-purple-500 outline-none bg-transparent"
+                      />
+                    ) : (
+                      <p className="text-lg text-gray-600 mt-0.5">{position.company}</p>
+                    )}
                   </div>
                 </div>
-                <StatusBadge status={position.status} />
+                <div className="flex items-center gap-2">
+                  {isEditing ? (
+                    <select
+                      value={editedPosition.status}
+                      onChange={(e) => setEditedPosition({ ...editedPosition, status: e.target.value as Position['status'] })}
+                      className="px-3 py-1.5 rounded-full text-sm font-medium border border-gray-300 focus:border-purple-500 outline-none"
+                    >
+                      <option value="open">Open</option>
+                      <option value="closed">Closed</option>
+                      <option value="on_hold">On Hold</option>
+                    </select>
+                  ) : (
+                    <StatusBadge status={position.status} />
+                  )}
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-3 mt-5 text-sm text-gray-500">
-                <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg">
-                  <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  {position.location}
-                </span>
-                <WorkTypeBadge type={position.workType} />
-                <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg">
-                  <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {position.experienceYears}+ years
-                </span>
+                {isEditing ? (
+                  <>
+                    <input
+                      type="text"
+                      value={editedPosition.location}
+                      onChange={(e) => setEditedPosition({ ...editedPosition, location: e.target.value })}
+                      placeholder="Location"
+                      className="px-3 py-1.5 rounded-lg border border-gray-300 focus:border-purple-500 outline-none text-sm"
+                    />
+                    <select
+                      value={editedPosition.workType}
+                      onChange={(e) => setEditedPosition({ ...editedPosition, workType: e.target.value as Position['workType'] })}
+                      className="px-3 py-1.5 rounded-lg border border-gray-300 focus:border-purple-500 outline-none text-sm"
+                    >
+                      <option value="remote">Remote</option>
+                      <option value="hybrid">Hybrid</option>
+                      <option value="onsite">Onsite</option>
+                    </select>
+                    <input
+                      type="number"
+                      value={editedPosition.experienceYears}
+                      onChange={(e) => setEditedPosition({ ...editedPosition, experienceYears: parseInt(e.target.value) || 0 })}
+                      placeholder="Years exp"
+                      className="px-3 py-1.5 rounded-lg border border-gray-300 focus:border-purple-500 outline-none text-sm w-24"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg">
+                      <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      {position.location}
+                    </span>
+                    <WorkTypeBadge type={position.workType} />
+                    <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg">
+                      <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {position.experienceYears}+ years
+                    </span>
+                  </>
+                )}
               </div>
 
-              {position.salary && (
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editedPosition.salary || ''}
+                  onChange={(e) => setEditedPosition({ ...editedPosition, salary: e.target.value || undefined })}
+                  placeholder="Salary (optional)"
+                  className="mt-4 px-4 py-2 rounded-xl border border-gray-300 focus:border-purple-500 outline-none text-sm"
+                />
+              ) : position.salary ? (
                 <p className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-sm font-medium">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   {position.salary}
                 </p>
+              ) : null}
+
+              {/* Edit/Save buttons */}
+              {onUpdate && (
+                <div className="mt-4 flex gap-2">
+                  {isEditing ? (
+                    <>
+                      <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+                      >
+                        {saving ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        onClick={handleCancel}
+                        disabled={saving}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="px-4 py-2 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-100 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit Position
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 
             {/* Description */}
             <Section title="Description" icon="document">
-              <p className="text-gray-700 leading-relaxed">{position.description}</p>
+              {isEditing ? (
+                <textarea
+                  value={editedPosition.description}
+                  onChange={(e) => setEditedPosition({ ...editedPosition, description: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:border-purple-500 outline-none text-gray-700 leading-relaxed min-h-[100px]"
+                />
+              ) : (
+                <p className="text-gray-700 leading-relaxed">{position.description}</p>
+              )}
             </Section>
 
             {/* Must Have Requirements */}
@@ -196,17 +343,6 @@ export default function PositionModal({ position, candidates, onClose }: Positio
                           </p>
                         </div>
                       </div>
-                      <a
-                        href={candidate.cvFile}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="skill-tag px-3 py-1.5 text-sm text-purple-600 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors flex items-center gap-1.5"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        View CV
-                      </a>
                     </div>
                   ))}
                 </div>

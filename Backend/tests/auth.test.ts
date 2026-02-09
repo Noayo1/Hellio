@@ -14,9 +14,9 @@ describe('Authentication', () => {
     // Seed admin user for tests
     const passwordHash = await bcrypt.hash(TEST_PASSWORD, 10);
     await pool.query(
-      `INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3)
+      `INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4)
        ON CONFLICT (email) DO NOTHING`,
-      ['admin@hellio.com', passwordHash, 'Admin']
+      ['admin@hellio.com', passwordHash, 'Admin', 'admin']
     );
   });
 
@@ -31,6 +31,16 @@ describe('Authentication', () => {
       expect(response.body).toHaveProperty('user');
       expect(response.body.user.email).toBe('admin@hellio.com');
       expect(response.body.user).not.toHaveProperty('password_hash');
+    });
+
+    it('should return user role in login response', async () => {
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'admin@hellio.com', password: TEST_PASSWORD });
+
+      expect(response.status).toBe(200);
+      expect(response.body.user).toHaveProperty('role');
+      expect(response.body.user.role).toBe('admin');
     });
 
     it('should return 401 with invalid password', async () => {
@@ -76,6 +86,7 @@ describe('Authentication', () => {
       expect(response.status).toBe(200);
       expect(response.body.email).toBe('admin@hellio.com');
       expect(response.body.name).toBe('Admin');
+      expect(response.body.role).toBe('admin');
       expect(response.body).not.toHaveProperty('password_hash');
     });
 

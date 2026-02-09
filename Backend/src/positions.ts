@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import pool from './db.js';
-import { authMiddleware, AuthRequest } from './middleware.js';
+import { authMiddleware, requireAdmin, AuthRequest } from './middleware.js';
 
 const router = Router();
 
@@ -59,8 +59,8 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
   }
 });
 
-// PUT /api/positions/:id
-router.put('/:id', async (req: AuthRequest, res: Response) => {
+// PUT /api/positions/:id (admin only)
+router.put('/:id', requireAdmin, async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const {
     title, company, location, status, description,

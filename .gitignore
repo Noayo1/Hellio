@@ -7,3 +7,10 @@ dist/
 CVsJobs/
 Frontend/public/cvs/
 paragraph-explaining.txt
+CLAUDE.md
+
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+.env.example

@@ -1,11 +1,12 @@
 import { config } from 'dotenv';
-import { join } from 'path';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 import pg from 'pg';
 
-// Load .env from project root (for running from Backend dir)
-config({ path: join(process.cwd(), '..', '.env') });
-// Also try current directory (for running from root)
-config({ path: join(process.cwd(), '.env') });
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Load .env from project root
+config({ path: join(__dirname, '..', '..', '.env') });
 
 const { Pool } = pg;
 

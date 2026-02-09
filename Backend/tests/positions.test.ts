@@ -13,11 +13,12 @@ describe('Positions API', () => {
   let authToken: string;
 
   beforeEach(async () => {
-    // Seed admin user
     const passwordHash = await bcrypt.hash(TEST_PASSWORD, 10);
+
+    // Seed admin user
     await pool.query(
-      `INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3)`,
-      ['admin@hellio.com', passwordHash, 'Admin']
+      `INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4)`,
+      ['admin@hellio.com', passwordHash, 'Admin', 'admin']
     );
 
     // Get auth token
@@ -54,7 +55,7 @@ describe('Positions API', () => {
       expect(response.status).toBe(401);
     });
 
-    it('should return array of positions with auth token', async () => {
+    it('should return array of positions', async () => {
       const response = await request(app)
         .get('/api/positions')
         .set('Authorization', `Bearer ${authToken}`);
@@ -149,6 +150,66 @@ describe('Positions API', () => {
         });
 
       expect(response.status).toBe(404);
+    });
+  });
+
+  describe('Viewer role restrictions', () => {
+    let viewerToken: string;
+
+    beforeEach(async () => {
+      const passwordHash = await bcrypt.hash(TEST_PASSWORD, 10);
+
+      // Seed viewer user
+      await pool.query(
+        `INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4)`,
+        ['viewer@hellio.com', passwordHash, 'Viewer', 'viewer']
+      );
+
+      // Get viewer auth token
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'viewer@hellio.com', password: TEST_PASSWORD });
+      viewerToken = loginResponse.body.token;
+    });
+
+    it('should allow viewer to read positions', async () => {
+      const response = await request(app)
+        .get('/api/positions')
+        .set('Authorization', `Bearer ${viewerToken}`);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('should allow viewer to read single position', async () => {
+      const response = await request(app)
+        .get('/api/positions/p1')
+        .set('Authorization', `Bearer ${viewerToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.id).toBe('p1');
+    });
+
+    it('should reject position update for viewer role', async () => {
+      const response = await request(app)
+        .put('/api/positions/p1')
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .send({
+          title: 'Attempted Update',
+          company: 'Tech Corp',
+          location: 'Tel Aviv',
+          status: 'open',
+          description: 'Test',
+          requirements: [],
+          skills: [],
+          experienceYears: 0,
+          workType: 'remote',
+          contactName: 'Test',
+          contactEmail: 'test@test.com',
+        });
+
+      expect(response.status).toBe(403);
+      expect(response.body.error).toBe('Admin access required');
     });
   });
 });

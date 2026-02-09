@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import pool from './db.js';
-import { authMiddleware, AuthRequest } from './middleware.js';
+import { authMiddleware, requireAdmin, AuthRequest } from './middleware.js';
 
 const router = Router();
 
@@ -77,8 +77,8 @@ async function getCandidateWithPositions(candidateId: string) {
   return result.rows[0] || null;
 }
 
-// POST /api/candidates/:id/positions/:positionId
-router.post('/:id/positions/:positionId', async (req: AuthRequest, res: Response) => {
+// POST /api/candidates/:id/positions/:positionId (admin only)
+router.post('/:id/positions/:positionId', requireAdmin, async (req: AuthRequest, res: Response) => {
   const { id, positionId } = req.params;
 
   try {
@@ -104,8 +104,8 @@ router.post('/:id/positions/:positionId', async (req: AuthRequest, res: Response
   }
 });
 
-// DELETE /api/candidates/:id/positions/:positionId
-router.delete('/:id/positions/:positionId', async (req: AuthRequest, res: Response) => {
+// DELETE /api/candidates/:id/positions/:positionId (admin only)
+router.delete('/:id/positions/:positionId', requireAdmin, async (req: AuthRequest, res: Response) => {
   const { id, positionId } = req.params;
 
   try {

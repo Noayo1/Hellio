@@ -13,11 +13,12 @@ describe('Candidates API', () => {
   let authToken: string;
 
   beforeEach(async () => {
-    // Seed admin user
     const passwordHash = await bcrypt.hash(TEST_PASSWORD, 10);
+
+    // Seed admin user
     await pool.query(
-      `INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3)`,
-      ['admin@hellio.com', passwordHash, 'Admin']
+      `INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4)`,
+      ['admin@hellio.com', passwordHash, 'Admin', 'admin']
     );
 
     // Get auth token
@@ -52,7 +53,7 @@ describe('Candidates API', () => {
       expect(response.status).toBe(401);
     });
 
-    it('should return array of candidates with auth token', async () => {
+    it('should return array of candidates', async () => {
       const response = await request(app)
         .get('/api/candidates')
         .set('Authorization', `Bearer ${authToken}`);
@@ -177,6 +178,75 @@ describe('Candidates API', () => {
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(404);
+    });
+  });
+
+  describe('Viewer role restrictions', () => {
+    let viewerToken: string;
+
+    beforeEach(async () => {
+      const passwordHash = await bcrypt.hash(TEST_PASSWORD, 10);
+
+      // Seed viewer user
+      await pool.query(
+        `INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4)`,
+        ['viewer@hellio.com', passwordHash, 'Viewer', 'viewer']
+      );
+
+      // Get viewer auth token
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'viewer@hellio.com', password: TEST_PASSWORD });
+      viewerToken = loginResponse.body.token;
+
+      // Seed test position
+      await pool.query(
+        `INSERT INTO positions (id, title, company, location, status, description, contact_name, contact_email)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        ['p1', 'Test Position', 'Test Co', 'Tel Aviv', 'open', 'Test', 'HR', 'hr@test.com']
+      );
+    });
+
+    it('should allow viewer to read candidates', async () => {
+      const response = await request(app)
+        .get('/api/candidates')
+        .set('Authorization', `Bearer ${viewerToken}`);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('should allow viewer to read single candidate', async () => {
+      const response = await request(app)
+        .get('/api/candidates/c1')
+        .set('Authorization', `Bearer ${viewerToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.id).toBe('c1');
+    });
+
+    it('should reject position assignment for viewer role', async () => {
+      const response = await request(app)
+        .post('/api/candidates/c1/positions/p1')
+        .set('Authorization', `Bearer ${viewerToken}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.error).toBe('Admin access required');
+    });
+
+    it('should reject position unassignment for viewer role', async () => {
+      // First assign as admin
+      await pool.query(
+        `INSERT INTO candidate_positions (candidate_id, position_id) VALUES ($1, $2)`,
+        ['c1', 'p1']
+      );
+
+      const response = await request(app)
+        .delete('/api/candidates/c1/positions/p1')
+        .set('Authorization', `Bearer ${viewerToken}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.error).toBe('Admin access required');
     });
   });
 });

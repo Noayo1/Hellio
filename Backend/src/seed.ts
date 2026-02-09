@@ -53,12 +53,21 @@ async function seed() {
     }
     const passwordHash = await bcrypt.hash(adminPassword, 10);
     await pool.query(
-      `INSERT INTO users (email, password_hash, name)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (email) DO UPDATE SET password_hash = $2, name = $3`,
-      ['admin@hellio.com', passwordHash, 'Admin']
+      `INSERT INTO users (email, password_hash, name, role)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (email) DO UPDATE SET password_hash = $2, name = $3, role = $4`,
+      ['admin@hellio.com', passwordHash, 'Admin', 'admin']
     );
-    console.log('Admin user created: admin@hellio.com');
+    console.log('Admin user created: admin@hellio.com (role: admin)');
+
+    // Seed viewer user (same password as admin for testing)
+    await pool.query(
+      `INSERT INTO users (email, password_hash, name, role)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (email) DO UPDATE SET password_hash = $2, name = $3, role = $4`,
+      ['viewer@hellio.com', passwordHash, 'Viewer', 'viewer']
+    );
+    console.log('Viewer user created: viewer@hellio.com (role: viewer)');
 
     // Load candidates from Frontend JSON
     const candidatesPath = join(__dirname, '../../Frontend/src/data/candidates.json');

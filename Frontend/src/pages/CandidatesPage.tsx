@@ -1,14 +1,15 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { Candidate, Position } from '../types';
 import CandidateCard from '../components/CandidateCard';
 import CandidateModal from '../components/CandidateModal';
 import CompareModal from '../components/CompareModal';
-import candidatesData from '../data/candidates.json';
-import positionsData from '../data/positions.json';
+import { api } from '../api/client';
 
 export default function CandidatesPage() {
-  const [candidates, setCandidates] = useState<Candidate[]>(candidatesData as Candidate[]);
-  const positions = positionsData as Position[];
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [titleFilter, setTitleFilter] = useState<string>('');
@@ -17,6 +18,25 @@ export default function CandidatesPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeCandidate, setActiveCandidate] = useState<Candidate | null>(null);
   const [showCompare, setShowCompare] = useState(false);
+
+  // Fetch data from API
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [candidatesData, positionsData] = await Promise.all([
+          api.getCandidates(),
+          api.getPositions(),
+        ]);
+        setCandidates(candidatesData as Candidate[]);
+        setPositions(positionsData as Position[]);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   // Get all unique skills for filter dropdown
   const allSkills = useMemo(() => {
@@ -62,32 +82,48 @@ export default function CandidatesPage() {
     });
   }, []);
 
-  const handleAssignPosition = useCallback((candidateId: string, positionId: string, assign: boolean) => {
-    setCandidates((prev) => {
-      const updated = prev.map((c) => {
-        if (c.id !== candidateId) return c;
-        const positionIds = assign
-          ? [...c.positionIds, positionId]
-          : c.positionIds.filter((id) => id !== positionId);
-        return { ...c, positionIds };
-      });
+  const handleAssignPosition = useCallback(async (candidateId: string, positionId: string, assign: boolean) => {
+    try {
+      const updatedCandidate = assign
+        ? await api.assignPosition(candidateId, positionId)
+        : await api.unassignPosition(candidateId, positionId);
+
+      setCandidates((prev) =>
+        prev.map((c) => (c.id === candidateId ? (updatedCandidate as Candidate) : c))
+      );
 
       // Sync activeCandidate with updated data
       setActiveCandidate((currentActive) => {
         if (currentActive?.id === candidateId) {
-          return updated.find(c => c.id === candidateId) ?? currentActive;
+          return updatedCandidate as Candidate;
         }
         return currentActive;
       });
-
-      return updated;
-    });
+    } catch (err) {
+      console.error('Failed to update position assignment:', err);
+    }
   }, []);
 
   const selectedCandidates = useMemo(
     () => candidates.filter((c) => selectedIds.includes(c.id)),
     [candidates, selectedIds]
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-gray-500">Loading candidates...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-red-500">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div>
