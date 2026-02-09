@@ -2,12 +2,20 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+COPY Backend/package*.json ./
 
-COPY src/ ./src/
-COPY tsconfig.json ./
+RUN npm ci
+
+COPY Backend/src/ ./src/
+COPY Backend/tsconfig.json ./
+
+# Copy seed data files
+COPY Frontend/src/data/ ./seed-data/
+COPY CVsJobs/cvs/ ./seed-data/cvs/
 
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
 
 CMD ["npm", "run", "dev"]

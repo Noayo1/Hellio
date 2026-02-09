@@ -5,7 +5,8 @@ import { dirname, join, basename } from 'path';
 import pool from './db.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const cvsFolder = join(__dirname, '../../CVsJobs/cvs');
+const seedDataDir = join(__dirname, '../seed-data');
+const cvsFolder = process.env.CVS_FOLDER || join(seedDataDir, 'cvs');
 
 interface Candidate {
   id: string;
@@ -70,7 +71,7 @@ async function seed() {
     console.log('Viewer user created: viewer@hellio.com (role: viewer)');
 
     // Load candidates from Frontend JSON
-    const candidatesPath = join(__dirname, '../../Frontend/src/data/candidates.json');
+    const candidatesPath = process.env.CANDIDATES_JSON || join(seedDataDir, 'candidates.json');
     const candidatesData = JSON.parse(readFileSync(candidatesPath, 'utf-8')) as Candidate[];
 
     for (const candidate of candidatesData) {
@@ -129,7 +130,7 @@ async function seed() {
     console.log(`Seeded ${filesSeeded} CV files`);
 
     // Load positions from Frontend JSON
-    const positionsPath = join(__dirname, '../../Frontend/src/data/positions.json');
+    const positionsPath = process.env.POSITIONS_JSON || join(seedDataDir, 'positions.json');
     const positionsData = JSON.parse(readFileSync(positionsPath, 'utf-8')) as Position[];
 
     for (const position of positionsData) {

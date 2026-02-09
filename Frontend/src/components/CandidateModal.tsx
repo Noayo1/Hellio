@@ -1,7 +1,13 @@
 import { createPortal } from 'react-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { Candidate, Position } from '../types';
 import { calculateYearsOfExperience } from '../utils/date';
+import { api } from '../api/client';
+
+interface CandidateFile {
+  id: string;
+  fileName: string;
+}
 
 interface CandidateModalProps {
   candidate: Candidate;
@@ -16,10 +22,19 @@ export default function CandidateModal({
   onClose,
   onAssignPosition,
 }: CandidateModalProps) {
+  const [files, setFiles] = useState<CandidateFile[]>([]);
+
   const handlePositionToggle = (positionId: string) => {
     const isAssigned = candidate.positionIds.includes(positionId);
     onAssignPosition(candidate.id, positionId, !isAssigned);
   };
+
+  // Fetch candidate files
+  useEffect(() => {
+    api.getCandidateFiles(candidate.id).then((data) => {
+      setFiles(data as CandidateFile[]);
+    });
+  }, [candidate.id]);
 
   // Close modal on Escape key
   useEffect(() => {
@@ -29,6 +44,14 @@ export default function CandidateModal({
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [onClose]);
+
+  const formatUrl = (url: string, type: 'linkedin' | 'github'): string => {
+    const cleaned = url.replace(/^https?:\/\//, '').replace(/^www\./, '');
+    if (type === 'linkedin') {
+      return `https://www.${cleaned}`;
+    }
+    return `https://${cleaned}`;
+  };
 
   return createPortal(
     <div className="fixed inset-0 z-[100] overflow-y-auto">
@@ -105,26 +128,26 @@ export default function CandidateModal({
 
               <div className="flex gap-3 mt-5">
                 {candidate.linkedIn && (
-                  <ExternalLink href={`https://${candidate.linkedIn}`} icon="linkedin">
+                  <ExternalLink href={formatUrl(candidate.linkedIn, 'linkedin')} icon="linkedin">
                     LinkedIn
                   </ExternalLink>
                 )}
                 {candidate.github && (
-                  <ExternalLink href={`https://${candidate.github}`} icon="github">
+                  <ExternalLink href={formatUrl(candidate.github, 'github')} icon="github">
                     GitHub
                   </ExternalLink>
                 )}
-                <a
-                  href={candidate.cvFile}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-primary px-5 py-2.5 text-sm font-medium text-white rounded-xl flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Download CV
-                </a>
+                {files.length > 0 && (
+                  <button
+                    onClick={() => api.downloadFile(files[0].id, files[0].fileName)}
+                    className="btn-primary px-5 py-2.5 text-sm font-medium text-white rounded-xl flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Download CV
+                  </button>
+                )}
               </div>
             </div>
 

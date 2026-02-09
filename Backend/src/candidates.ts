@@ -13,7 +13,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     const result = await pool.query(`
       SELECT
         c.id, c.name, c.email, c.phone, c.location,
-        c.linkedin, c.github, c.status, c.summary,
+        c.linkedin as "linkedIn", c.github, c.status, c.summary,
         c.skills, c.languages, c.experience, c.education, c.certifications,
         COALESCE(
           (SELECT json_agg(cp.position_id) FROM candidate_positions cp WHERE cp.candidate_id = c.id),
@@ -38,7 +38,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
     const result = await pool.query(`
       SELECT
         c.id, c.name, c.email, c.phone, c.location,
-        c.linkedin, c.github, c.status, c.summary,
+        c.linkedin as "linkedIn", c.github, c.status, c.summary,
         c.skills, c.languages, c.experience, c.education, c.certifications,
         COALESCE(
           (SELECT json_agg(cp.position_id) FROM candidate_positions cp WHERE cp.candidate_id = c.id),
@@ -64,7 +64,7 @@ async function getCandidateWithPositions(candidateId: string) {
   const result = await pool.query(`
     SELECT
       c.id, c.name, c.email, c.phone, c.location,
-      c.linkedin, c.github, c.status, c.summary,
+      c.linkedin as "linkedIn", c.github, c.status, c.summary,
       c.skills, c.languages, c.experience, c.education, c.certifications,
       COALESCE(
         (SELECT json_agg(cp.position_id) FROM candidate_positions cp WHERE cp.candidate_id = c.id),

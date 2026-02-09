@@ -93,6 +93,27 @@ class ApiClient {
   getFileDownloadUrl(fileId: string): string {
     return `${API_URL}/files/${fileId}`;
   }
+
+  async downloadFile(fileId: string, fileName: string): Promise<void> {
+    const token = this.getToken();
+    const response = await fetch(`${API_URL}/files/${fileId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to download file');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }
 }
 
 export const api = new ApiClient();
