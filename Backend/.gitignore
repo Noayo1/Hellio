@@ -14,3 +14,7 @@ coverage/
 # IDE
 .idea/
 .vscode/
+
+# Documentation (local only)
+SCHEMA_PLAN.md
+CLAUDE.md
