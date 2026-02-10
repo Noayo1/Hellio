@@ -18,3 +18,6 @@ coverage/
 # Documentation (local only)
 SCHEMA_PLAN.md
 CLAUDE.md
+
+.docs/
+
