@@ -150,6 +150,7 @@ export default function PositionsPage() {
             position={position}
             onClick={() => setActivePosition(position)}
             candidatesCount={candidateCounts[position.id] ?? 0}
+            onDelete={isAdmin ? handleDeletePosition : undefined}
           />
         ))}
       </div>

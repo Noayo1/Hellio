@@ -50,12 +50,14 @@ interface PositionCardProps {
   position: Position;
   onClick: () => void;
   candidatesCount: number;
+  onDelete?: (id: string) => void;
 }
 
 const PositionCard = memo(function PositionCard({
   position,
   onClick,
   candidatesCount,
+  onDelete,
 }: PositionCardProps) {
   const status = STATUS_CONFIG[position.status];
   const workType = WORK_TYPE_CONFIG[position.workType];
@@ -67,6 +69,24 @@ const PositionCard = memo(function PositionCard({
     >
       {/* Decorative corner accent */}
       <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-purple-100/50 to-transparent rounded-bl-full pointer-events-none" />
+
+      {/* Delete button (admin only) */}
+      {onDelete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (window.confirm(`Delete ${position.title}? This cannot be undone.`)) {
+              onDelete(position.id);
+            }
+          }}
+          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          title="Delete position"
+        >
+          <svg className="w-3.5 h-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
 
       {/* Status badge */}
       <div className="flex justify-between items-start mb-4 relative">

@@ -237,6 +237,7 @@ export default function CandidatesPage() {
             onSelect={handleSelect}
             onClick={() => setActiveCandidate(candidate)}
             positionsCount={candidate.positionIds.length}
+            onDelete={isAdmin ? handleDeleteCandidate : undefined}
           />
         ))}
       </div>

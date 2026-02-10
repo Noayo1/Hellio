@@ -15,6 +15,7 @@ interface CandidateCardProps {
   onSelect: (id: string) => void;
   onClick: () => void;
   positionsCount: number;
+  onDelete?: (id: string) => void;
 }
 
 const CandidateCard = memo(function CandidateCard({
@@ -24,6 +25,7 @@ const CandidateCard = memo(function CandidateCard({
   onSelect,
   onClick,
   positionsCount,
+  onDelete,
 }: CandidateCardProps) {
   const currentJob = candidate.experience[0];
   const yearsOfExp = candidate.yearsOfExperience ?? calculateYearsOfExperience(candidate.experience);
@@ -33,12 +35,30 @@ const CandidateCard = memo(function CandidateCard({
 
   return (
     <div
-      className={`glass-card card-shine rounded-2xl p-6 cursor-pointer relative overflow-hidden border-purple-200 ${
+      className={`glass-card card-shine rounded-2xl p-6 cursor-pointer relative overflow-hidden border-purple-200 group ${
         selected ? 'selection-ring selected' : ''
       }`}
     >
       {/* Decorative corner accent */}
       <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-purple-100/50 to-transparent rounded-bl-full pointer-events-none" />
+
+      {/* Delete button (admin only) */}
+      {onDelete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (window.confirm(`Delete ${candidate.name}? This cannot be undone.`)) {
+              onDelete(candidate.id);
+            }
+          }}
+          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          title="Delete candidate"
+        >
+          <svg className="w-3.5 h-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
 
       <div className="flex items-start gap-4 relative">
         <input
