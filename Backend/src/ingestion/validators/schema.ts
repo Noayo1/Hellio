@@ -144,6 +144,12 @@ const requirementSchema = z.object({
   required: z.boolean().default(true),
 });
 
+// Normalize work type to lowercase
+const workTypeSchema = z.string()
+  .transform(val => val.toLowerCase())
+  .pipe(z.enum(['remote', 'onsite', 'hybrid']))
+  .optional();
+
 // Full job data from LLM
 export const jobExtractionSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -153,7 +159,7 @@ export const jobExtractionSchema = z.object({
   requirements: z.array(requirementSchema).default([]),
   skills: z.array(z.string()).default([]),
   experienceYears: z.number().int().min(0).max(50).optional(),
-  workType: z.enum(['remote', 'onsite', 'hybrid']).optional(),
+  workType: workTypeSchema,
   salary: z.string().optional(),
   contactName: z.string().optional(),
   contactEmail: z.string().email().optional(),

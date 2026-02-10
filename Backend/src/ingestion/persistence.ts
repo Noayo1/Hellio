@@ -256,16 +256,22 @@ function generatePositionId(): string {
  */
 export async function persistJob(
   data: JobExtraction,
+  regexResults: RegexResults,
   extractionLogId: string
 ): Promise<string> {
   const positionId = generatePositionId();
+
+  // Use regex results with LLM fallback for contact info and title
+  const contactEmail = regexResults.contactEmail || data.contactEmail || 'hr@company.com';
+  const contactName = regexResults.contactName || data.contactName || 'HR Department';
+  const title = regexResults.jobTitle || data.title;
 
   await pool.query(
     `INSERT INTO positions (id, title, company, location, status, description, experience_years, work_type, salary, contact_name, contact_email)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
     [
       positionId,
-      data.title,
+      title,
       data.company,
       data.location || 'Not specified',
       'open',
@@ -273,8 +279,8 @@ export async function persistJob(
       data.experienceYears || 0,
       data.workType || 'hybrid',
       data.salary || null,
-      data.contactName || 'HR Department',
-      data.contactEmail || 'hr@company.com',
+      contactName,
+      contactEmail,
     ]
   );
 

@@ -142,7 +142,7 @@ export async function processDocument(input: DocumentInput): Promise<ExtractionR
     }
 
     // Job persistence
-    const positionId = await persistJob(validation.data!, logId);
+    const positionId = await persistJob(validation.data!, regexResults, logId);
     await updateExtractionLog(logId, {
       status: 'success',
       totalDurationMs: Date.now() - startTime,

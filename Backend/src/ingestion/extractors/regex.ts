@@ -8,6 +8,9 @@ export interface RegexResults {
   phone: string | null;
   linkedin: string | null;
   github: string | null;
+  contactName: string | null;  // For job descriptions - extracted from "From: Name <email>"
+  contactEmail: string | null; // For job descriptions - alias for email
+  jobTitle: string | null;     // For job descriptions - extracted from "Subject:" line
 }
 
 /**
@@ -60,6 +63,40 @@ export function extractLinkedIn(text: string): string | null {
 }
 
 /**
+ * Extract contact name from email header pattern.
+ * Looks for "From: Name <email>" format common in job postings.
+ */
+export function extractContactName(text: string): string | null {
+  const fromPattern = /From:\s*([^<\n]+?)(?:\s*<|$)/i;
+  const match = fromPattern.exec(text);
+  if (match && match[1].trim()) {
+    return match[1].trim();
+  }
+  return null;
+}
+
+/**
+ * Extract job title from email subject line.
+ * Cleans up common prefixes/suffixes like "Urgent -", "Needed", "Position".
+ */
+export function extractJobTitle(text: string): string | null {
+  const subjectPattern = /Subject:\s*(.+)/i;
+  const match = subjectPattern.exec(text);
+  if (!match) return null;
+
+  let title = match[1].trim();
+
+  // Remove common prefixes
+  title = title.replace(/^(urgent|important|re|fwd|fw)\s*[-:]\s*/gi, '');
+
+  // Remove common suffixes
+  title = title.replace(/\s*[-–]\s*(urgent|asap|needed|required|immediate|open|hiring)$/gi, '');
+  title = title.replace(/\s+(needed|required|wanted|opening|position|role|job|vacancy)$/gi, '');
+
+  return title.trim() || null;
+}
+
+/**
  * Extract GitHub URL from text. Returns normalized URL or null.
  * Handles URLs split across lines.
  */
@@ -84,11 +121,15 @@ export function extractWithRegex(text: string): RegexResults {
 
   // Remove phone from text before extracting email to avoid conflicts
   const textWithoutPhone = phone ? processed.replace(phone, ' ') : processed;
+  const email = extractEmail(textWithoutPhone);
 
   return {
-    email: extractEmail(textWithoutPhone),
+    email,
     phone,
     linkedin: extractLinkedIn(processed),
     github: extractGitHub(processed),
+    contactName: extractContactName(text),  // Use original text for header pattern
+    contactEmail: email,                     // Same as email for job descriptions
+    jobTitle: extractJobTitle(text),         // Extract from Subject line
   };
 }
