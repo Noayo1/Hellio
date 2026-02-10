@@ -26,7 +26,7 @@ const CandidateCard = memo(function CandidateCard({
   positionsCount,
 }: CandidateCardProps) {
   const currentJob = candidate.experience[0];
-  const yearsOfExp = calculateYearsOfExperience(candidate.experience);
+  const yearsOfExp = candidate.yearsOfExperience ?? calculateYearsOfExperience(candidate.experience);
   const topSkills = candidate.skills.slice(0, 3);
   const isCheckboxDisabled = disabled && !selected;
   const status = STATUS_CONFIG[candidate.status];

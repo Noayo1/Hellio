@@ -12,7 +12,8 @@ async function getCandidateById(candidateId: string) {
   // Get base candidate
   const candidateResult = await pool.query(
     `SELECT id, name, email, phone, location,
-            linkedin as "linkedIn", github, status, summary
+            linkedin as "linkedIn", github, status, summary,
+            years_of_experience as "yearsOfExperience"
      FROM candidates WHERE id = $1`,
     [candidateId]
   );

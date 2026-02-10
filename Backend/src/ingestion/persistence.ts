@@ -37,6 +37,19 @@ async function getOrCreateSkill(skillName: string): Promise<number> {
 }
 
 /**
+ * Get or create a language by name.
+ */
+async function getOrCreateLanguage(languageName: string): Promise<number> {
+  const result = await pool.query(
+    `INSERT INTO languages (name) VALUES ($1)
+     ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+     RETURNING id`,
+    [languageName]
+  );
+  return result.rows[0].id;
+}
+
+/**
  * Create extraction log entry.
  */
 export async function createExtractionLog(
@@ -148,18 +161,19 @@ export async function persistCandidate(
   const email = regexResults.email || `${candidateId}@unknown.com`;
 
   await pool.query(
-    `INSERT INTO candidates (id, name, email, phone, location, linkedin, github, status, summary, extraction_log_id, extraction_source)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+    `INSERT INTO candidates (id, name, email, phone, location, linkedin, github, status, summary, years_of_experience, extraction_log_id, extraction_source)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
     [
       candidateId,
       data.name,
       email,
       regexResults.phone,
-      'Unknown',
+      data.location || 'Unknown',
       regexResults.linkedin,
       regexResults.github,
       'active',
       data.summary,
+      data.yearsOfExperience,
       extractionLogId,
       'ingestion',
     ]
@@ -170,6 +184,14 @@ export async function persistCandidate(
     await pool.query(
       `INSERT INTO candidate_skills (candidate_id, skill_id, level) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
       [candidateId, skillId, skill.level]
+    );
+  }
+
+  for (const language of data.languages) {
+    const languageId = await getOrCreateLanguage(language);
+    await pool.query(
+      `INSERT INTO candidate_languages (candidate_id, language_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [candidateId, languageId]
     );
   }
 

@@ -40,6 +40,7 @@ export interface Candidate {
 
   status: CandidateStatus;
   summary: string;
+  yearsOfExperience?: number | null;
 
   skills: Skill[];
   languages: string[];

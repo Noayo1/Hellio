@@ -124,11 +124,12 @@ export async function processDocument(input: DocumentInput): Promise<ExtractionR
     }
 
     if (input.type === 'cv') {
+      const fileBuffer = input.buffer || parseResult.buffer;
       const candidateId = await persistCandidate(
         validation.data!,
         regexResults,
         logId,
-        input.buffer,
+        fileBuffer,
         input.fileName || input.filePath?.split('/').pop()
       );
       await updateExtractionLog(logId, {

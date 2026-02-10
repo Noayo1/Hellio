@@ -10,6 +10,7 @@ import { readFile } from 'fs/promises';
 
 export interface ParseResult {
   text: string;
+  buffer?: Buffer;
   error?: string;
   durationMs: number;
 }
@@ -65,6 +66,7 @@ export async function parseDocument(
 
   return {
     ...result,
+    buffer,
     durationMs: Date.now() - startTime,
   };
 }
@@ -76,7 +78,8 @@ export async function parseDocumentFromPath(filePath: string): Promise<ParseResu
   try {
     const buffer = await readFile(filePath);
     const fileName = filePath.split('/').pop() || filePath;
-    return parseDocument(buffer, fileName);
+    const result = await parseDocument(buffer, fileName);
+    return { ...result, buffer };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown file read error';
     return { text: '', error: message, durationMs: 0 };

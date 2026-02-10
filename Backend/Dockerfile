@@ -13,7 +13,7 @@ COPY Backend/tsconfig.json ./
 
 # Copy seed data files
 COPY Frontend/src/data/ ./seed-data/
-COPY CVsJobs/cvs/ ./seed-data/cvs/
+COPY CVsJobs/ ./seed-data/
 
 EXPOSE 3000
 

@@ -117,7 +117,7 @@ export default function CompareModal({ candidates, onClose }: CompareModalProps)
 
 function CompareHeader({ candidate }: { candidate: Candidate }) {
   const currentJob = candidate.experience[0];
-  const yearsOfExp = calculateYearsOfExperience(candidate.experience);
+  const yearsOfExp = candidate.yearsOfExperience ?? calculateYearsOfExperience(candidate.experience);
   return (
     <div className="p-5 rounded-xl bg-gradient-to-br from-white to-purple-50/50 border border-purple-100/50">
       <div className="flex items-start gap-4">

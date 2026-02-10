@@ -5,8 +5,11 @@
 
 import { z } from 'zod';
 
-// Normalize skill level variations from LLM
-function normalizeSkillLevel(level: string): string {
+// Valid skill level values
+const validLevels = ['beginner', 'intermediate', 'advanced', 'expert'];
+
+// Normalize skill level variations from LLM, return null for unknown values
+function normalizeSkillLevel(level: string): string | null {
   const normalized = level.toLowerCase().trim();
   const mappings: Record<string, string> = {
     // Beginner variations
@@ -33,16 +36,35 @@ function normalizeSkillLevel(level: string): string {
     'professional': 'expert',
     'specialist': 'expert',
   };
-  return mappings[normalized] || normalized;
+  const mapped = mappings[normalized] || normalized;
+  // Return null if not a valid level (e.g., "native", "fluent" for languages)
+  return validLevels.includes(mapped) ? mapped : null;
 }
 
-// Valid skill levels with transformation
+// Valid skill levels with transformation (returns null for unknown values)
 const skillLevelSchema = z.string().transform(normalizeSkillLevel).pipe(
-  z.enum(['beginner', 'intermediate', 'advanced', 'expert'])
+  z.enum(['beginner', 'intermediate', 'advanced', 'expert']).nullable()
 );
 
-// Normalize and validate date format: YYYY-MM
+// Normalize date format to YYYY-MM
 function normalizeDate(date: string): string {
+  // Handle year-only format: "2022" → "2022-01"
+  const yearOnly = date.match(/^(\d{4})$/);
+  if (yearOnly) {
+    return `${yearOnly[1]}-01`;
+  }
+
+  // Handle YYYY-MM-DD format (extract year-month): "2022-00-00" → "2022-01"
+  const fullDate = date.match(/^(\d{4})-(\d{2})-\d{2}$/);
+  if (fullDate) {
+    const [, year, month] = fullDate;
+    let monthNum = parseInt(month, 10);
+    if (monthNum < 1) monthNum = 1;
+    if (monthNum > 12) monthNum = 12;
+    return `${year}-${monthNum.toString().padStart(2, '0')}`;
+  }
+
+  // Handle YYYY-MM format
   const match = date.match(/^(\d{4})-(\d{2})$/);
   if (!match) return date; // Let validation fail if not matching pattern
 
@@ -56,15 +78,15 @@ function normalizeDate(date: string): string {
   return `${year}-${monthNum.toString().padStart(2, '0')}`;
 }
 
-// Date format: YYYY-MM with normalization
+// Date format: YYYY, YYYY-MM, or YYYY-MM-DD, normalized to YYYY-MM
 const dateStringSchema = z.string()
-  .regex(/^\d{4}-\d{2}$/, 'Date must be YYYY-MM format')
+  .regex(/^\d{4}(-\d{2}(-\d{2})?)?$/, 'Date must be YYYY, YYYY-MM, or YYYY-MM-DD format')
   .transform(normalizeDate);
 
-// Skill with level
+// Skill with optional level (only extract if explicitly stated in CV)
 const skillSchema = z.object({
   name: z.string().min(1, 'Skill name is required'),
-  level: skillLevelSchema,
+  level: skillLevelSchema.nullable().optional(),
 });
 
 // Work experience
@@ -82,7 +104,7 @@ const educationSchema = z.object({
   institution: z.string().min(1, 'Institution is required'),
   startDate: dateStringSchema.optional().nullable(),
   endDate: dateStringSchema.optional().nullable(),
-  status: z.string().optional(),
+  status: z.string().optional().nullable(),
 });
 
 // Certification
@@ -94,11 +116,17 @@ const certificationSchema = z.object({
 // Full candidate data from LLM
 export const candidateExtractionSchema = z.object({
   name: z.string().min(1, 'Name is required'),
+  location: z.string().nullable().default(null),
+  yearsOfExperience: z.number().min(0).max(50).nullable().optional().default(null),
   skills: z.array(skillSchema).default([]),
+  languages: z.array(z.string()).default([]),
   experience: z.array(experienceSchema).default([]),
   education: z.array(educationSchema).default([]),
   certifications: z.array(certificationSchema).default([]),
-  summary: z.string().min(10, 'Summary must be at least 10 characters'),
+  summary: z.union([
+    z.string(),
+    z.array(z.string()).transform(arr => arr.join(' '))
+  ]).pipe(z.string().min(10, 'Summary must be at least 10 characters')),
 });
 
 export type CandidateExtraction = z.infer<typeof candidateExtractionSchema>;
