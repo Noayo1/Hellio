@@ -45,7 +45,7 @@ Backend/src/ingestion/
 │   ├── docx.ts           # mammoth library
 │   └── txt.ts            # fs.readFile
 ├── extractors/
-│   ├── regex.ts          # email, phone, linkedin, github
+│   ├── regex.ts          # email, phone, linkedin, github, contactName, contactEmail, jobTitle
 │   ├── llm.ts            # prompt templates + response parsing
 │   └── bedrock.ts        # AWS Bedrock client (Nova + Claude)
 └── validators/
@@ -86,6 +86,7 @@ CREATE TABLE extraction_logs (
 
 ALTER TABLE candidates ADD COLUMN extraction_log_id UUID REFERENCES extraction_logs(id);
 ALTER TABLE candidates ADD COLUMN extraction_source VARCHAR(20);
+ALTER TABLE candidates ADD COLUMN years_of_experience NUMERIC(4,1);
 ```
 
 ## API Endpoints
@@ -275,6 +276,7 @@ export BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
 
 ## Regex Patterns
 
+### CV Extraction
 ```typescript
 // Email
 /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi
@@ -289,24 +291,53 @@ export BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
 /github\.com\/[\w-]+/gi
 ```
 
-## LLM Prompt (CV Extraction)
+### Job Description Extraction
+```typescript
+// Contact name (from "From: Name <email>" pattern)
+/From:\s*([^<\n]+?)(?:\s*<|$)/i
 
+// Job title (from "Subject:" line, with cleanup)
+/Subject:\s*(.+)/i
+// Removes prefixes: "Urgent -", "Re:", "Fwd:"
+// Removes suffixes: "- Urgent", "Needed", "Required", etc.
+```
+
+## LLM Prompts
+
+### CV Extraction
 ```
 Extract structured data from this CV. Return valid JSON only.
 
 {
   "name": "Full name",
-  "skills": [{"name": "Python", "level": "beginner|intermediate|advanced|expert"}],
+  "location": "City/region or null",
+  "yearsOfExperience": "Number from profile summary or null",
+  "skills": [{"name": "Python", "level": "beginner|intermediate|advanced|expert or null"}],
+  "languages": ["Hebrew", "English"],
   "experience": [{"title": "", "company": "", "startDate": "YYYY-MM", "endDate": "YYYY-MM or null", "highlights": []}],
   "education": [{"degree": "", "institution": "", "startDate": "", "endDate": "", "status": ""}],
   "certifications": [{"name": "", "year": ""}],
   "summary": "2-3 sentence professional bio"
 }
+```
 
-CV Text:
----
-{rawText}
----
+### Job Description Extraction
+```
+Extract structured data from this job description. Return valid JSON only.
+
+{
+  "title": "Job title",
+  "company": "Company name",
+  "location": "Job location (optional)",
+  "description": "Comprehensive description (5-10 sentences, preserve details)",
+  "requirements": [{"text": "", "required": true/false}],
+  "skills": ["skill1", "skill2"],
+  "experienceYears": "Number (optional)",
+  "workType": "remote|onsite|hybrid (optional)",
+  "salary": "Salary info (optional)",
+  "contactName": "Hiring contact (optional)",
+  "contactEmail": "Contact email (optional)"
+}
 ```
 
 ## Running Tests
