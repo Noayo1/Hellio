@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import CandidatesPage from './pages/CandidatesPage';
 import PositionsPage from './pages/PositionsPage';
+import UploadPage from './pages/UploadPage';
 import LoginPage from './pages/LoginPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -43,6 +44,7 @@ function AppRoutes() {
         <Route index element={<Navigate to="/candidates" replace />} />
         <Route path="candidates" element={<CandidatesPage />} />
         <Route path="positions" element={<PositionsPage />} />
+        <Route path="upload" element={<UploadPage />} />
       </Route>
     </Routes>
   );

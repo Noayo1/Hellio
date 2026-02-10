@@ -114,6 +114,35 @@ class ApiClient {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
   }
+
+  // Upload
+  async uploadDocument(
+    file: File,
+    type: 'cv' | 'job'
+  ): Promise<{ success: boolean; candidateId?: string; errors?: string[] }> {
+    const token = this.getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_URL}/ingestion/upload?type=${type}`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+
+    if (response.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+      throw new Error('Unauthorized');
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Upload failed' }));
+      throw new Error(error.error || 'Upload failed');
+    }
+
+    return response.json();
+  }
 }
 
 export const api = new ApiClient();
