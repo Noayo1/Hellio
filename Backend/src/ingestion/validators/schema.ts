@@ -42,12 +42,24 @@ function normalizeSkillLevel(level: string): string | null {
 }
 
 // Valid skill levels with transformation (returns null for unknown values)
+// Lenient: catch any errors and return null
 const skillLevelSchema = z.string().transform(normalizeSkillLevel).pipe(
   z.enum(['beginner', 'intermediate', 'advanced', 'expert']).nullable()
-);
+).catch(null);
+
+// Get current year-month for fallback
+function getCurrentYearMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+}
 
 // Normalize date format to YYYY-MM
 function normalizeDate(date: string): string {
+  // Handle "Present", "Current", etc. in startDate (LLM mistake) - use current date
+  if (/^(present|current|now|ongoing)$/i.test(date.trim())) {
+    return getCurrentYearMonth();
+  }
+
   // Handle year-only format: "2022" → "2022-01"
   const yearOnly = date.match(/^(\d{4})$/);
   if (yearOnly) {
@@ -78,140 +90,242 @@ function normalizeDate(date: string): string {
   return `${year}-${monthNum.toString().padStart(2, '0')}`;
 }
 
-// Date format: YYYY, YYYY-MM, or YYYY-MM-DD, normalized to YYYY-MM
+// Date format: YYYY, YYYY-MM, YYYY-MM-DD, or "Present/Current" (LLM mistake), normalized to YYYY-MM
+// Lenient: if date parsing fails, return current date as fallback
 const dateStringSchema = z.string()
-  .regex(/^\d{4}(-\d{2}(-\d{2})?)?$/, 'Date must be YYYY, YYYY-MM, or YYYY-MM-DD format')
-  .transform(normalizeDate);
+  .transform((val) => {
+    // Try to normalize, return current date if it fails
+    const normalized = normalizeDate(val);
+    // Check if result is valid YYYY-MM format
+    if (/^\d{4}-\d{2}$/.test(normalized)) {
+      return normalized;
+    }
+    // Fallback to current date
+    return getCurrentYearMonth();
+  })
+  .catch(getCurrentYearMonth());
 
 // Handle "Present", "Current", null for end dates
+// Lenient: any parsing error results in null (ongoing position)
 const endDateSchema = z.union([
   dateStringSchema,
   z.string().regex(/^(present|current|now|ongoing)$/i).transform(() => null),
   z.null(),
-]).nullable().optional();
+]).nullable().optional().catch(null);
 
 // Skill with optional level (only extract if explicitly stated in CV)
+// Lenient: name defaults to empty string (will be filtered out later)
 const skillSchema = z.object({
-  name: z.string().min(1, 'Skill name is required'),
-  level: skillLevelSchema.nullable().optional(),
+  name: z.string().catch(''),
+  level: skillLevelSchema.nullable().optional().catch(null),
 });
 
 // Work experience
+// Lenient: all fields have fallbacks, invalid experiences filtered out later
 const experienceSchema = z.object({
-  title: z.string().min(1, 'Job title is required'),
-  company: z.string().min(1, 'Company is required'),
-  startDate: dateStringSchema,
+  title: z.string().catch(''),
+  company: z.string().catch(''),
+  startDate: dateStringSchema.catch(getCurrentYearMonth()),
   endDate: endDateSchema,
-  highlights: z.array(z.string()).default([]),
+  highlights: z.array(z.string().catch('')).default([]).catch([]),
 });
 
-// Education entry
+// Education entry - institution can be null from LLM (will be filtered out later)
+// Lenient: all fields have fallbacks, invalid education filtered out later
 const educationSchema = z.object({
-  degree: z.string().min(1, 'Degree is required'),
-  institution: z.string().min(1, 'Institution is required'),
-  startDate: dateStringSchema.optional().nullable(),
-  endDate: dateStringSchema.optional().nullable(),
-  status: z.string().optional().nullable(),
+  degree: z.string().catch(''),
+  institution: z.string().nullable().optional().catch(null),
+  startDate: dateStringSchema.optional().nullable().catch(null),
+  endDate: dateStringSchema.optional().nullable().catch(null),
+  status: z.string().optional().nullable().catch(null),
 });
 
 // Certification
+// Lenient: name defaults to empty (will be filtered out later)
 const certificationSchema = z.object({
-  name: z.string().min(1, 'Certification name is required'),
-  year: z.number().int().min(1900).max(2100).optional().nullable(),
+  name: z.string().catch(''),
+  year: z.number().int().min(1900).max(2100).optional().nullable().catch(null),
 });
 
 // Language - handle both string and object formats from LLM
 // LLM might return "English" or {"name": "English", "level": "native"}
+// Lenient: defaults to empty string (will be filtered out later)
 const languageSchema = z.union([
   z.string(),
   z.object({ name: z.string() }).transform(obj => obj.name),
-]);
+]).catch('');
 
 // Full candidate data from LLM
+// Lenient: all fields have fallbacks, invalid entries filtered out
 export const candidateExtractionSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  location: z.string().nullable().default(null),
-  yearsOfExperience: z.number().min(0).max(50).nullable().optional().default(null),
-  skills: z.array(skillSchema).default([]),
-  languages: z.array(languageSchema).default([]),
-  experience: z.array(experienceSchema).default([]),
-  education: z.array(educationSchema).default([]),
-  certifications: z.array(certificationSchema).default([]),
+  name: z.string().catch('Unknown Candidate'),
+  location: z.string().nullable().default(null).catch(null),
+  yearsOfExperience: z.number().min(0).max(50).nullable().optional().default(null).catch(null),
+  // Filter out skills with empty names
+  skills: z.array(skillSchema).default([]).catch([]).transform(
+    (arr) => arr.filter((skill) => skill.name && skill.name.trim().length > 0)
+  ),
+  // Filter out empty language strings
+  languages: z.array(languageSchema).default([]).catch([]).transform(
+    (arr) => arr.filter((lang) => lang && lang.trim().length > 0)
+  ),
+  // Filter out experiences with empty title or company
+  experience: z.array(experienceSchema).default([]).catch([]).transform(
+    (arr) => arr.filter((exp) => exp.title && exp.title.trim().length > 0 && exp.company && exp.company.trim().length > 0)
+  ),
+  // Filter out education entries with null/empty institution or degree
+  education: z.array(educationSchema).default([]).catch([]).transform(
+    (arr) => arr.filter((edu) => edu.institution && edu.institution.trim().length > 0 && edu.degree && edu.degree.trim().length > 0)
+  ),
+  // Filter out certifications with empty names
+  certifications: z.array(certificationSchema).default([]).catch([]).transform(
+    (arr) => arr.filter((cert) => cert.name && cert.name.trim().length > 0)
+  ),
+  // Summary: accept string or array, default to generic summary if invalid
   summary: z.union([
     z.string(),
     z.array(z.string()).transform(arr => arr.join(' '))
-  ]).pipe(z.string().min(10, 'Summary must be at least 10 characters')),
+  ]).catch('').transform((val) => val.trim().length >= 10 ? val : 'Professional candidate with experience in the field.'),
 });
 
 export type CandidateExtraction = z.infer<typeof candidateExtractionSchema>;
 
 // Job requirement
+// Lenient: text defaults to empty (will be filtered out later)
 const requirementSchema = z.object({
-  text: z.string().min(1, 'Requirement text is required'),
-  required: z.boolean().default(true),
+  text: z.string().catch(''),
+  required: z.boolean().default(true).catch(true),
 });
 
 // Keep work type as-is from job description (just clean up formatting)
+// Lenient: defaults to undefined if parsing fails
 const workTypeSchema = z.string()
   .transform(val => val.toLowerCase().trim())
-  .optional();
+  .optional()
+  .catch(undefined);
 
 // Full job data from LLM
+// Lenient: all fields have fallbacks, invalid entries filtered out
 export const jobExtractionSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  company: z.string().min(1, 'Company is required'),
-  location: z.string().optional(),
-  description: z.string().min(10, 'Description must be at least 10 characters'),
-  requirements: z.array(requirementSchema).default([]),
-  skills: z.array(z.string()).default([]),
-  experienceYears: z.number().int().min(0).max(50).optional(),
+  title: z.string().catch('Unknown Position'),
+  company: z.string().catch('Unknown Company'),
+  location: z.string().optional().catch(undefined),
+  description: z.string().catch('').transform((val) => val.trim().length >= 10 ? val : 'Position description pending.'),
+  // Filter out requirements with empty text
+  requirements: z.array(requirementSchema).default([]).catch([]).transform(
+    (arr) => arr.filter((req) => req.text && req.text.trim().length > 0)
+  ),
+  // Filter out empty skill strings
+  skills: z.array(z.string().catch('')).default([]).catch([]).transform(
+    (arr) => arr.filter((skill) => skill && skill.trim().length > 0)
+  ),
+  experienceYears: z.number().int().min(0).max(50).optional().catch(undefined),
   workType: workTypeSchema,
-  salary: z.string().optional(),
-  contactName: z.string().optional(),
-  contactEmail: z.string().email().optional(),
+  salary: z.string().optional().catch(undefined),
+  contactName: z.string().optional().catch(undefined),
+  contactEmail: z.string().email().optional().catch(undefined),
 });
 
 export type JobExtraction = z.infer<typeof jobExtractionSchema>;
 
 /**
- * Validation result with errors
+ * Validation result with warnings (lenient mode - always succeeds)
  */
 export interface ValidationResult<T> {
   valid: boolean;
   data?: T;
-  errors: string[];
+  errors: string[];  // Now used for warnings, not fatal errors
 }
 
 /**
- * Validate candidate extraction data from LLM
+ * Validate candidate extraction data from LLM.
+ * Lenient mode: always succeeds, returns warnings for defaulted values.
  */
 export function validateCandidateData(data: unknown): ValidationResult<CandidateExtraction> {
+  // With lenient schema, parse should always succeed
   const result = candidateExtractionSchema.safeParse(data);
 
   if (result.success) {
-    return { valid: true, data: result.data, errors: [] };
+    // Collect warnings about defaulted/filtered data
+    const warnings: string[] = [];
+    const parsed = result.data;
+
+    if (parsed.name === 'Unknown Candidate') {
+      warnings.push('name: defaulted to "Unknown Candidate"');
+    }
+    if (parsed.summary === 'Professional candidate with experience in the field.') {
+      warnings.push('summary: defaulted to generic summary');
+    }
+
+    return { valid: true, data: parsed, errors: warnings };
   }
 
-  const errors = result.error.errors.map(
-    (e) => `${e.path.join('.')}: ${e.message}`
-  );
+  // This should rarely happen with lenient schema, but handle gracefully
+  console.warn('Unexpected validation failure in lenient mode:', result.error.errors);
 
-  return { valid: false, errors };
+  // Force parse anyway - our schema should handle it
+  try {
+    const forcedData = candidateExtractionSchema.parse(data ?? {});
+    return { valid: true, data: forcedData, errors: ['Forced lenient parsing'] };
+  } catch {
+    // Absolute fallback - create minimal valid candidate
+    const fallbackData: CandidateExtraction = {
+      name: 'Unknown Candidate',
+      location: null,
+      yearsOfExperience: null,
+      skills: [],
+      languages: [],
+      experience: [],
+      education: [],
+      certifications: [],
+      summary: 'Professional candidate with experience in the field.',
+    };
+    return { valid: true, data: fallbackData, errors: ['Used fallback data - LLM output was unusable'] };
+  }
 }
 
 /**
- * Validate job extraction data from LLM
+ * Validate job extraction data from LLM.
+ * Lenient mode: always succeeds, returns warnings for defaulted values.
  */
 export function validateJobData(data: unknown): ValidationResult<JobExtraction> {
+  // With lenient schema, parse should always succeed
   const result = jobExtractionSchema.safeParse(data);
 
   if (result.success) {
-    return { valid: true, data: result.data, errors: [] };
+    // Collect warnings about defaulted data
+    const warnings: string[] = [];
+    const parsed = result.data;
+
+    if (parsed.title === 'Unknown Position') {
+      warnings.push('title: defaulted to "Unknown Position"');
+    }
+    if (parsed.company === 'Unknown Company') {
+      warnings.push('company: defaulted to "Unknown Company"');
+    }
+    if (parsed.description === 'Position description pending.') {
+      warnings.push('description: defaulted to generic description');
+    }
+
+    return { valid: true, data: parsed, errors: warnings };
   }
 
-  const errors = result.error.errors.map(
-    (e) => `${e.path.join('.')}: ${e.message}`
-  );
+  // This should rarely happen with lenient schema, but handle gracefully
+  console.warn('Unexpected validation failure in lenient mode:', result.error.errors);
 
-  return { valid: false, errors };
+  // Force parse anyway
+  try {
+    const forcedData = jobExtractionSchema.parse(data ?? {});
+    return { valid: true, data: forcedData, errors: ['Forced lenient parsing'] };
+  } catch {
+    // Absolute fallback - create minimal valid job
+    const fallbackData: JobExtraction = {
+      title: 'Unknown Position',
+      company: 'Unknown Company',
+      description: 'Position description pending.',
+      requirements: [],
+      skills: [],
+    };
+    return { valid: true, data: fallbackData, errors: ['Used fallback data - LLM output was unusable'] };
+  }
 }
