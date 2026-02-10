@@ -5,6 +5,7 @@ import candidatesRoutes from './candidates.js';
 import positionsRoutes from './positions.js';
 import filesRoutes from './files.js';
 import ingestionRoutes from './ingestion/routes.js';
+import { bootstrap } from './bootstrap.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,9 +27,16 @@ app.use('/api/ingestion', ingestionRoutes);
 
 // Only start server if not in test mode
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+  bootstrap()
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+      });
+    })
+    .catch((err) => {
+      console.error('Bootstrap failed:', err);
+      process.exit(1);
+    });
 }
 
 export default app;

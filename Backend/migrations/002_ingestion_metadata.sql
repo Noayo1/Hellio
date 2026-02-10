@@ -28,3 +28,4 @@ CREATE INDEX idx_extraction_logs_created ON extraction_logs(created_at);
 -- Add extraction source tracking to candidates
 ALTER TABLE candidates ADD COLUMN IF NOT EXISTS extraction_log_id UUID REFERENCES extraction_logs(id);
 ALTER TABLE candidates ADD COLUMN IF NOT EXISTS extraction_source VARCHAR(20); -- 'manual', 'ingestion', 'seed'
+ALTER TABLE candidates ADD COLUMN IF NOT EXISTS years_of_experience NUMERIC(4,1); -- e.g., 5.5 years

@@ -120,13 +120,20 @@ const certificationSchema = z.object({
   year: z.number().int().min(1900).max(2100).optional().nullable(),
 });
 
+// Language - handle both string and object formats from LLM
+// LLM might return "English" or {"name": "English", "level": "native"}
+const languageSchema = z.union([
+  z.string(),
+  z.object({ name: z.string() }).transform(obj => obj.name),
+]);
+
 // Full candidate data from LLM
 export const candidateExtractionSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   location: z.string().nullable().default(null),
   yearsOfExperience: z.number().min(0).max(50).nullable().optional().default(null),
   skills: z.array(skillSchema).default([]),
-  languages: z.array(z.string()).default([]),
+  languages: z.array(languageSchema).default([]),
   experience: z.array(experienceSchema).default([]),
   education: z.array(educationSchema).default([]),
   certifications: z.array(certificationSchema).default([]),

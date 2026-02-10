@@ -11,8 +11,7 @@ COPY Backend/tests/ ./tests/
 COPY Backend/vitest.config.ts ./
 COPY Backend/tsconfig.json ./
 
-# Copy seed data files
-COPY Frontend/src/data/ ./seed-data/
+# Copy CV/job files for CLI ingestion (optional)
 COPY CVsJobs/ ./seed-data/
 
 EXPOSE 3000

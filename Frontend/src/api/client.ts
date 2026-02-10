@@ -98,10 +98,6 @@ class ApiClient {
   }
 
   // Files
-  getFileDownloadUrl(fileId: string): string {
-    return `${API_URL}/files/${fileId}`;
-  }
-
   async downloadFile(fileId: string, fileName: string): Promise<void> {
     const token = this.getToken();
     const response = await fetch(`${API_URL}/files/${fileId}`, {
