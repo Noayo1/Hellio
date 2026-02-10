@@ -48,19 +48,27 @@ export function extractEmail(text: string): string | null {
 
 /**
  * Extract LinkedIn URL from text. Returns normalized URL or null.
+ * Handles URLs split across lines (e.g., "linkedin.com/in/john-\ndoe").
  */
 export function extractLinkedIn(text: string): string | null {
-  const pattern = /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/([\w-]+?)(?=github|linkedin|\s|$)/gi;
-  const match = pattern.exec(text);
+  // First, try to fix line-broken URLs by removing newlines after hyphens in linkedin URLs
+  const fixedText = text.replace(/(linkedin\.com\/in\/[\w-]*)-\s*\n\s*([\w-]+)/gi, '$1-$2');
+
+  const pattern = /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/([\w-]+)(?=\s|$|[^a-zA-Z0-9_-])/gi;
+  const match = pattern.exec(fixedText);
   return match ? `https://linkedin.com/in/${match[1]}` : null;
 }
 
 /**
  * Extract GitHub URL from text. Returns normalized URL or null.
+ * Handles URLs split across lines.
  */
 export function extractGitHub(text: string): string | null {
-  const pattern = /(?:https?:\/\/)?(?:www\.)?github\.com\/([\w-]+?)(?=github|linkedin|\s|$)/gi;
-  const match = pattern.exec(text);
+  // First, try to fix line-broken URLs by removing newlines after hyphens in github URLs
+  const fixedText = text.replace(/(github\.com\/[\w-]*)-\s*\n\s*([\w-]+)/gi, '$1-$2');
+
+  const pattern = /(?:https?:\/\/)?(?:www\.)?github\.com\/([\w-]+)(?=\s|$|[^a-zA-Z0-9_-])/gi;
+  const match = pattern.exec(fixedText);
   return match ? `https://github.com/${match[1]}` : null;
 }
 

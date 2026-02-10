@@ -10,6 +10,7 @@ import {
   createExtractionLog,
   updateExtractionLog,
   persistCandidate,
+  persistJob,
 } from './persistence.js';
 
 export interface DocumentInput {
@@ -140,12 +141,13 @@ export async function processDocument(input: DocumentInput): Promise<ExtractionR
       return { success: true, candidateId, extractionLogId: logId };
     }
 
-    // Job persistence would go here
+    // Job persistence
+    const positionId = await persistJob(validation.data!, logId);
     await updateExtractionLog(logId, {
       status: 'success',
       totalDurationMs: Date.now() - startTime,
     });
-    return { success: true, extractionLogId: logId };
+    return { success: true, positionId, extractionLogId: logId };
 
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

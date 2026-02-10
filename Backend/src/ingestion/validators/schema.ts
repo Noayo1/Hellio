@@ -83,6 +83,13 @@ const dateStringSchema = z.string()
   .regex(/^\d{4}(-\d{2}(-\d{2})?)?$/, 'Date must be YYYY, YYYY-MM, or YYYY-MM-DD format')
   .transform(normalizeDate);
 
+// Handle "Present", "Current", null for end dates
+const endDateSchema = z.union([
+  dateStringSchema,
+  z.string().regex(/^(present|current|now|ongoing)$/i).transform(() => null),
+  z.null(),
+]).nullable().optional();
+
 // Skill with optional level (only extract if explicitly stated in CV)
 const skillSchema = z.object({
   name: z.string().min(1, 'Skill name is required'),
@@ -94,7 +101,7 @@ const experienceSchema = z.object({
   title: z.string().min(1, 'Job title is required'),
   company: z.string().min(1, 'Company is required'),
   startDate: dateStringSchema,
-  endDate: dateStringSchema.nullable(),
+  endDate: endDateSchema,
   highlights: z.array(z.string()).default([]),
 });
 

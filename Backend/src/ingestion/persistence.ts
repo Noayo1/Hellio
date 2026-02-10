@@ -243,3 +243,58 @@ export async function persistCandidate(
 
   return candidateId;
 }
+
+/**
+ * Generate a unique position ID.
+ */
+function generatePositionId(): string {
+  return `pos_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/**
+ * Persist job data to database.
+ */
+export async function persistJob(
+  data: JobExtraction,
+  extractionLogId: string
+): Promise<string> {
+  const positionId = generatePositionId();
+
+  await pool.query(
+    `INSERT INTO positions (id, title, company, location, status, description, experience_years, work_type, salary, contact_name, contact_email)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+    [
+      positionId,
+      data.title,
+      data.company,
+      data.location || 'Not specified',
+      'open',
+      data.description,
+      data.experienceYears || 0,
+      data.workType || 'hybrid',
+      data.salary || null,
+      data.contactName || 'HR Department',
+      data.contactEmail || 'hr@company.com',
+    ]
+  );
+
+  // Insert skills
+  for (const skillName of data.skills) {
+    const skillId = await getOrCreateSkill(skillName);
+    await pool.query(
+      `INSERT INTO position_skills (position_id, skill_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [positionId, skillId]
+    );
+  }
+
+  // Insert requirements
+  for (let i = 0; i < data.requirements.length; i++) {
+    const req = data.requirements[i];
+    await pool.query(
+      `INSERT INTO position_requirements (position_id, text, required, sort_order) VALUES ($1, $2, $3, $4)`,
+      [positionId, req.text, req.required, i]
+    );
+  }
+
+  return positionId;
+}
