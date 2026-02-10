@@ -32,7 +32,7 @@ CREATE TABLE positions (
     status VARCHAR(20) NOT NULL DEFAULT 'open',
     description TEXT NOT NULL,
     experience_years INTEGER NOT NULL DEFAULT 0,
-    work_type VARCHAR(20) NOT NULL DEFAULT 'hybrid',
+    work_type VARCHAR(100),
     salary VARCHAR(100),
     contact_name VARCHAR(255) NOT NULL,
     contact_email VARCHAR(255) NOT NULL,

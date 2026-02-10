@@ -151,10 +151,9 @@ const requirementSchema = z.object({
   required: z.boolean().default(true),
 });
 
-// Normalize work type to lowercase
+// Keep work type as-is from job description (just clean up formatting)
 const workTypeSchema = z.string()
-  .transform(val => val.toLowerCase())
-  .pipe(z.enum(['remote', 'onsite', 'hybrid']))
+  .transform(val => val.toLowerCase().trim())
   .optional();
 
 // Full job data from LLM
