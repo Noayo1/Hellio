@@ -132,7 +132,7 @@ CREATE TABLE education (
     institution VARCHAR(255) NOT NULL,
     start_date DATE,
     end_date DATE,
-    status VARCHAR(50),
+    status VARCHAR(255),
     sort_order INTEGER DEFAULT 0,
     FOREIGN KEY (candidate_id) REFERENCES candidates(id) ON DELETE CASCADE
 );

@@ -25,7 +25,7 @@ Extract:
 - skills: Array of TECHNICAL skills only (e.g., Python, Docker, AWS, Kubernetes) with {name, level}. Level is beginner/intermediate/advanced/expert OR null if not explicitly stated.
 - languages: Array of spoken languages (e.g., ["Hebrew", "English", "Spanish"])
 - experience: Array of {title, company, startDate (YYYY-MM), endDate (YYYY-MM or null), highlights: string[]}
-- education: Array of {degree, institution, startDate?, endDate?, status?}
+- education: Array of {degree, institution, startDate?, endDate?, status?}. Status should ONLY be: "completed", "in progress", "expected YYYY", or null. Do NOT put highlights or achievements in status.
 - certifications: Array of {name, year?}
 - summary: 2-3 sentence professional bio
 
@@ -47,7 +47,7 @@ const JOB_EXTRACTION_PROMPT = `You are extracting structured data from a job des
 
 Extract:
 - title: Job title (string)
-- company: Company name (string)
+- company: Company name. Extract from the job posting content, sender's signature, or email domain (e.g., "sarah@acme.com" → "Acme"). Do NOT use the recipient's email domain (e.g., NOT from "hr@hellio.com").
 - location: Job location (optional)
 - description: Comprehensive description extracted directly from the job posting. Include: the role overview, key responsibilities, team context, company info, and any unique aspects mentioned. Keep all relevant details from the original text (5-10 sentences). Do NOT summarize or shorten - preserve the important information.
 - requirements: Array of {text, required: boolean}
