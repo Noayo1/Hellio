@@ -37,14 +37,14 @@ class ApiClient {
   }
 
   // Auth
-  async login(email: string, password: string): Promise<{ token: string; user: { id: string; email: string; name: string } }> {
+  async login(email: string, password: string): Promise<{ token: string; user: { id: string; email: string; name: string; role: 'admin' | 'viewer' } }> {
     return this.request('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
   }
 
-  async getMe(): Promise<{ id: string; email: string; name: string }> {
+  async getMe(): Promise<{ id: string; email: string; name: string; role: 'admin' | 'viewer' }> {
     return this.request('/auth/me');
   }
 
@@ -73,6 +73,10 @@ class ApiClient {
     return this.request(`/candidates/${candidateId}/files`);
   }
 
+  async deleteCandidate(id: string): Promise<{ success: boolean }> {
+    return this.request(`/candidates/${id}`, { method: 'DELETE' });
+  }
+
   // Positions
   async getPositions(): Promise<unknown[]> {
     return this.request('/positions');
@@ -87,6 +91,10 @@ class ApiClient {
       method: 'PUT',
       body: JSON.stringify(data),
     });
+  }
+
+  async deletePosition(id: string): Promise<{ success: boolean }> {
+    return this.request(`/positions/${id}`, { method: 'DELETE' });
   }
 
   // Files

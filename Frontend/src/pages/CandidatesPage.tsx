@@ -4,8 +4,12 @@ import CandidateCard from '../components/CandidateCard';
 import CandidateModal from '../components/CandidateModal';
 import CompareModal from '../components/CompareModal';
 import { api } from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function CandidatesPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,6 +105,16 @@ export default function CandidatesPage() {
       });
     } catch (err) {
       console.error('Failed to update position assignment:', err);
+    }
+  }, []);
+
+  const handleDeleteCandidate = useCallback(async (id: string) => {
+    try {
+      await api.deleteCandidate(id);
+      setCandidates((prev) => prev.filter((c) => c.id !== id));
+      setActiveCandidate(null);
+    } catch (err) {
+      console.error('Failed to delete candidate:', err);
     }
   }, []);
 
@@ -246,6 +260,7 @@ export default function CandidatesPage() {
           positions={positions}
           onClose={() => setActiveCandidate(null)}
           onAssignPosition={handleAssignPosition}
+          onDelete={isAdmin ? handleDeleteCandidate : undefined}
         />
       )}
 

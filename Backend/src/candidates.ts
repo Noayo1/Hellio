@@ -240,4 +240,25 @@ router.get('/:id/files', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// DELETE /api/candidates/:id - Delete candidate (admin only)
+router.delete('/:id', requireAdmin, async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      'DELETE FROM candidates WHERE id = $1 RETURNING id',
+      [id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Candidate not found' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting candidate:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

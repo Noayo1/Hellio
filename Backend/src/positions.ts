@@ -171,4 +171,25 @@ router.put('/:id', requireAdmin, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// DELETE /api/positions/:id - Delete position (admin only)
+router.delete('/:id', requireAdmin, async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      'DELETE FROM positions WHERE id = $1 RETURNING id',
+      [id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Position not found' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting position:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

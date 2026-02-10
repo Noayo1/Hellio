@@ -3,8 +3,12 @@ import type { Candidate, Position } from '../types';
 import PositionCard from '../components/PositionCard';
 import PositionModal from '../components/PositionModal';
 import { api } from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function PositionsPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +72,17 @@ export default function PositionsPage() {
     } catch (err) {
       console.error('Failed to update position:', err);
       throw err;
+    }
+  }, []);
+
+  // Handle position delete
+  const handleDeletePosition = useCallback(async (id: string) => {
+    try {
+      await api.deletePosition(id);
+      setPositions((prev) => prev.filter((p) => p.id !== id));
+      setActivePosition(null);
+    } catch (err) {
+      console.error('Failed to delete position:', err);
     }
   }, []);
 
@@ -158,6 +173,7 @@ export default function PositionsPage() {
           candidates={getCandidatesForPosition(activePosition.id)}
           onClose={() => setActivePosition(null)}
           onUpdate={handleUpdatePosition}
+          onDelete={isAdmin ? handleDeletePosition : undefined}
         />
       )}
     </div>
