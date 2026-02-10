@@ -49,7 +49,7 @@ Extract:
 - title: Job title (string)
 - company: Company name (string)
 - location: Job location (optional)
-- description: Brief job description
+- description: Comprehensive description extracted directly from the job posting. Include: the role overview, key responsibilities, team context, company info, and any unique aspects mentioned. Keep all relevant details from the original text (5-10 sentences). Do NOT summarize or shorten - preserve the important information.
 - requirements: Array of {text, required: boolean}
 - skills: Array of skill names
 - experienceYears: Required years (number, optional)
