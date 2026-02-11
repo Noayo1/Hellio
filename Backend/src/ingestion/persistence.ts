@@ -148,37 +148,14 @@ export async function updateExtractionLog(
 }
 
 /**
- * Persist candidate data to database.
+ * Insert related data (skills, languages, experience, education, certifications).
+ * Used by both create and update paths.
  */
-export async function persistCandidate(
-  data: CandidateExtraction,
-  regexResults: RegexResults,
-  extractionLogId: string,
-  fileBuffer?: Buffer,
-  fileName?: string
-): Promise<string> {
-  const candidateId = generateCandidateId();
-  const email = regexResults.email || `${candidateId}@unknown.com`;
-
-  await pool.query(
-    `INSERT INTO candidates (id, name, email, phone, location, linkedin, github, status, summary, years_of_experience, extraction_log_id, extraction_source)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-    [
-      candidateId,
-      data.name,
-      email,
-      regexResults.phone,
-      data.location || 'Unknown',
-      regexResults.linkedin,
-      regexResults.github,
-      'active',
-      data.summary,
-      data.yearsOfExperience,
-      extractionLogId,
-      'ingestion',
-    ]
-  );
-
+async function insertCandidateRelatedData(
+  candidateId: string,
+  data: CandidateExtraction
+): Promise<void> {
+  // Insert skills
   for (const skill of data.skills) {
     const skillId = await getOrCreateSkill(skill.name);
     await pool.query(
@@ -187,6 +164,7 @@ export async function persistCandidate(
     );
   }
 
+  // Insert languages
   for (const language of data.languages) {
     const languageId = await getOrCreateLanguage(language);
     await pool.query(
@@ -195,6 +173,7 @@ export async function persistCandidate(
     );
   }
 
+  // Insert experiences with highlights
   for (let i = 0; i < data.experience.length; i++) {
     const exp = data.experience[i];
     const expResult = await pool.query(
@@ -212,6 +191,7 @@ export async function persistCandidate(
     }
   }
 
+  // Insert education
   for (let i = 0; i < data.education.length; i++) {
     const edu = data.education[i];
     await pool.query(
@@ -221,6 +201,7 @@ export async function persistCandidate(
     );
   }
 
+  // Insert certifications
   for (let i = 0; i < data.certifications.length; i++) {
     const cert = data.certifications[i];
     await pool.query(
@@ -228,17 +209,146 @@ export async function persistCandidate(
       [candidateId, cert.name, cert.year || null, i]
     );
   }
+}
 
+/**
+ * Delete all related data for a candidate (for update/refresh).
+ */
+async function deleteCandidateRelatedData(candidateId: string): Promise<void> {
+  // Delete in order respecting FK constraints
+  // experience_highlights is deleted via CASCADE from experiences
+  await pool.query('DELETE FROM experiences WHERE candidate_id = $1', [candidateId]);
+  await pool.query('DELETE FROM education WHERE candidate_id = $1', [candidateId]);
+  await pool.query('DELETE FROM certifications WHERE candidate_id = $1', [candidateId]);
+  await pool.query('DELETE FROM candidate_skills WHERE candidate_id = $1', [candidateId]);
+  await pool.query('DELETE FROM candidate_languages WHERE candidate_id = $1', [candidateId]);
+}
+
+/**
+ * Persist candidate data to database.
+ * Uses email-based deduplication: updates existing candidate if email matches,
+ * creates new candidate otherwise. Maintains CV version history.
+ */
+export async function persistCandidate(
+  data: CandidateExtraction,
+  regexResults: RegexResults,
+  extractionLogId: string,
+  fileBuffer?: Buffer,
+  fileName?: string
+): Promise<string> {
+  const email = regexResults.email || `temp_${Date.now()}@unknown.com`;
+
+  // Check if candidate with this email already exists
+  const existing = await pool.query(
+    'SELECT id FROM candidates WHERE email = $1',
+    [email]
+  );
+
+  let candidateId: string;
+  let isUpdate = false;
+
+  if (existing.rows.length > 0) {
+    // UPDATE existing candidate
+    candidateId = existing.rows[0].id;
+    isUpdate = true;
+
+    // Update candidate core data
+    await pool.query(
+      `UPDATE candidates SET
+        name = $1,
+        phone = $2,
+        location = $3,
+        linkedin = $4,
+        github = $5,
+        summary = $6,
+        years_of_experience = $7,
+        extraction_log_id = $8,
+        updated_at = NOW()
+       WHERE id = $9`,
+      [
+        data.name,
+        regexResults.phone,
+        data.location || 'Unknown',
+        regexResults.linkedin,
+        regexResults.github,
+        data.summary,
+        data.yearsOfExperience,
+        extractionLogId,
+        candidateId,
+      ]
+    );
+
+    // Delete old related data and re-insert (simpler than diffing)
+    await deleteCandidateRelatedData(candidateId);
+
+    console.log(`Updated existing candidate: ${candidateId} (${email})`);
+  } else {
+    // CREATE new candidate
+    candidateId = generateCandidateId();
+
+    await pool.query(
+      `INSERT INTO candidates (id, name, email, phone, location, linkedin, github, status, summary, years_of_experience, extraction_log_id, extraction_source)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+      [
+        candidateId,
+        data.name,
+        email,
+        regexResults.phone,
+        data.location || 'Unknown',
+        regexResults.linkedin,
+        regexResults.github,
+        'active',
+        data.summary,
+        data.yearsOfExperience,
+        extractionLogId,
+        'ingestion',
+      ]
+    );
+
+    console.log(`Created new candidate: ${candidateId} (${email})`);
+  }
+
+  // Insert related data (skills, experience, education, etc.)
+  await insertCandidateRelatedData(candidateId, data);
+
+  // Handle file upload with versioning
   if (fileBuffer && fileName) {
     const mimeType = fileName.endsWith('.pdf')
       ? 'application/pdf'
       : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-    const fileResult = await pool.query(
-      `INSERT INTO files (candidate_id, file_name, file_type, mime_type, content) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-      [candidateId, fileName, 'cv', mimeType, fileBuffer]
-    );
-    await updateExtractionLog(extractionLogId, { fileId: fileResult.rows[0].id });
+    if (isUpdate) {
+      // Mark existing CVs as not current
+      await pool.query(
+        'UPDATE files SET is_current = false WHERE candidate_id = $1 AND file_type = $2',
+        [candidateId, 'cv']
+      );
+
+      // Get next version number
+      const versionResult = await pool.query(
+        'SELECT COALESCE(MAX(version_number), 0) + 1 as next_version FROM files WHERE candidate_id = $1',
+        [candidateId]
+      );
+      const nextVersion = versionResult.rows[0].next_version;
+
+      // Insert new CV as current version
+      const fileResult = await pool.query(
+        `INSERT INTO files (candidate_id, file_name, file_type, mime_type, content, version_number, is_current)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+        [candidateId, fileName, 'cv', mimeType, fileBuffer, nextVersion, true]
+      );
+      await updateExtractionLog(extractionLogId, { fileId: fileResult.rows[0].id });
+
+      console.log(`Added CV version ${nextVersion} for candidate ${candidateId}`);
+    } else {
+      // New candidate - version 1
+      const fileResult = await pool.query(
+        `INSERT INTO files (candidate_id, file_name, file_type, mime_type, content, version_number, is_current)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+        [candidateId, fileName, 'cv', mimeType, fileBuffer, 1, true]
+      );
+      await updateExtractionLog(extractionLogId, { fileId: fileResult.rows[0].id });
+    }
   }
 
   return candidateId;

@@ -219,17 +219,19 @@ router.get('/:id/files', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Candidate not found' });
     }
 
-    // Get files (without content)
+    // Get files (without content) - include version info
     const result = await pool.query(
       `SELECT
         id,
         file_name as "fileName",
         file_type as "fileType",
         mime_type as "mimeType",
-        created_at as "createdAt"
+        created_at as "createdAt",
+        COALESCE(version_number, 1) as "versionNumber",
+        COALESCE(is_current, true) as "isCurrent"
       FROM files
       WHERE candidate_id = $1
-      ORDER BY created_at DESC`,
+      ORDER BY version_number DESC`,
       [id]
     );
 

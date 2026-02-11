@@ -29,6 +29,16 @@ export interface Certification {
   year: string;
 }
 
+export interface CandidateFile {
+  id: string;
+  fileName: string;
+  fileType: string;
+  mimeType: string;
+  createdAt: string;
+  versionNumber: number;
+  isCurrent: boolean;
+}
+
 export interface Candidate {
   id: string;
   name: string;
