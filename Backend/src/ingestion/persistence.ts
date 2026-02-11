@@ -237,6 +237,8 @@ export async function persistCandidate(
   fileName?: string
 ): Promise<string> {
   const email = regexResults.email || `temp_${Date.now()}@unknown.com`;
+  // Heuristic wins: prefer regex-extracted name over LLM
+  const name = regexResults.candidateName || data.name;
 
   // Check if candidate with this email already exists
   const existing = await pool.query(
@@ -266,7 +268,7 @@ export async function persistCandidate(
         updated_at = NOW()
        WHERE id = $9`,
       [
-        data.name,
+        name,
         regexResults.phone,
         data.location || 'Unknown',
         regexResults.linkedin,
@@ -291,7 +293,7 @@ export async function persistCandidate(
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [
         candidateId,
-        data.name,
+        name,
         email,
         regexResults.phone,
         data.location || 'Unknown',

@@ -8,6 +8,7 @@ export interface RegexResults {
   phone: string | null;
   linkedin: string | null;
   github: string | null;
+  candidateName: string | null;  // For CVs - extracted from first line
   contactName: string | null;  // For job descriptions - extracted from "From: Name <email>"
   contactEmail: string | null; // For job descriptions - alias for email
   jobTitle: string | null;     // For job descriptions - extracted from "Subject:" line
@@ -110,6 +111,85 @@ export function extractGitHub(text: string): string | null {
 }
 
 /**
+ * Normalize name to Title Case (e.g., "AmAndA GArrison" → "Amanda Garrison")
+ * Handles: hyphens (Mary-Jane), apostrophes (O'Brien), dots (Dr., J.)
+ */
+function toTitleCase(name: string): string {
+  return name
+    .split(/\s+/)
+    .map(word => {
+      // Single letter with dot (initial): J. → J.
+      if (/^[a-zA-Z]\.$/.test(word)) {
+        return word.toUpperCase();
+      }
+      // Titles with dot: Dr. → Dr., Mr. → Mr.
+      if (/^(dr|mr|mrs|ms|prof|jr|sr)\.?$/i.test(word)) {
+        const base = word.replace('.', '');
+        return base.charAt(0).toUpperCase() + base.slice(1).toLowerCase() + (word.endsWith('.') ? '.' : '');
+      }
+      // Handle hyphenated names (Mary-Jane → Mary-Jane)
+      if (word.includes('-')) {
+        return word.split('-').map(part =>
+          part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+        ).join('-');
+      }
+      // Handle apostrophes (O'Brien → O'Brien)
+      if (word.includes("'")) {
+        const parts = word.split("'");
+        return parts.map(part =>
+          part.length > 0 ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : ''
+        ).join("'");
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+}
+
+/**
+ * Extract candidate name from CV text.
+ * Heuristic: Name is typically on the first non-empty line of a CV.
+ * Supports: 2-6 words, dots (Dr., J.), hyphens (Mary-Jane), apostrophes (O'Brien)
+ */
+export function extractCandidateName(text: string): string | null {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+  // Keywords that indicate a line is NOT a name
+  const excludePatterns = [
+    /^(email|phone|tel|mobile|address|location|contact|profile|summary|skills|experience|education|objective|about)[\s:]/i,
+    /@/,  // Email
+    /\d{3,}/,  // Phone numbers (3+ digits)
+    /^(senior|junior|lead|staff|principal|intern|trainee)?\s*(software|web|full[- ]?stack|front[- ]?end|back[- ]?end|devops|qa|data|ml|ai|cloud|mobile|ios|android)?\s*(developer|engineer|architect|designer|manager|analyst|consultant|specialist|administrator|admin)/i,  // Job titles
+    /linkedin\.com|github\.com|http/i,  // URLs
+    /^[A-Z\s]+$/,  // ALL CAPS (section headers like "CONTACT", "PROFILE")
+    /resume|curriculum|vitae|cv/i,  // Document type indicators
+  ];
+
+  for (const line of lines.slice(0, 5)) {  // Check first 5 non-empty lines
+    // Skip if matches any exclude pattern
+    if (excludePatterns.some(pattern => pattern.test(line))) {
+      continue;
+    }
+
+    // Check if line looks like a name: 2-6 words
+    // Each word can be: letters, hyphens, apostrophes, or end with dot (initials/titles)
+    // Examples: "Dr. John A. Smith-Jones Jr.", "Mary O'Brien", "J. K. Rowling"
+    const words = line.split(/\s+/);
+    if (words.length >= 2 && words.length <= 6) {
+      const looksLikeName = words.every(word =>
+        // Allow: letters, hyphens, apostrophes, trailing dot (for initials like "J." or titles like "Dr.")
+        /^[a-zA-Z][a-zA-Z'.-]*$/i.test(word) && word.length >= 1
+      );
+      if (looksLikeName) {
+        // Normalize to Title Case
+        return toTitleCase(line);
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
  * Extract all regex-based fields from text.
  */
 export function extractWithRegex(text: string): RegexResults {
@@ -128,6 +208,7 @@ export function extractWithRegex(text: string): RegexResults {
     phone,
     linkedin: extractLinkedIn(processed),
     github: extractGitHub(processed),
+    candidateName: extractCandidateName(text),  // Use original text for line-based extraction
     contactName: extractContactName(text),  // Use original text for header pattern
     contactEmail: email,                     // Same as email for job descriptions
     jobTitle: extractJobTitle(text),         // Extract from Subject line
