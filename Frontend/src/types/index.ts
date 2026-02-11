@@ -89,3 +89,29 @@ export interface Position {
   contactName: string;
   contactEmail: string;
 }
+
+// === EXTRACTION LOGS ===
+
+export interface ExtractionLog {
+  id: string;
+  source_file_path: string;
+  source_type: 'cv' | 'job';
+  status: 'pending' | 'success' | 'failed';
+  error_message?: string;
+  total_duration_ms: number;
+  created_at: string;
+  candidate_id?: string;
+}
+
+export interface ExtractionLogDetail extends ExtractionLog {
+  raw_text: string;
+  regex_results: {
+    email: string | null;
+    phone: string | null;
+    linkedin: string | null;
+    github: string | null;
+  };
+  llm_raw_response: string;
+  llm_parsed_data: unknown;
+  validation_errors: string[];
+}

@@ -147,6 +147,22 @@ class ApiClient {
 
     return response.json();
   }
+
+  // Extraction Logs
+  async getExtractionLogs(params?: {
+    status?: string;
+    limit?: number;
+  }): Promise<{ logs: unknown[]; total: number }> {
+    const query = new URLSearchParams();
+    if (params?.status) query.set('status', params.status);
+    if (params?.limit) query.set('limit', params.limit.toString());
+    const queryStr = query.toString();
+    return this.request(`/ingestion/logs${queryStr ? `?${queryStr}` : ''}`);
+  }
+
+  async getExtractionLogDetail(id: string): Promise<unknown> {
+    return this.request(`/ingestion/logs/${id}`);
+  }
 }
 
 export const api = new ApiClient();
