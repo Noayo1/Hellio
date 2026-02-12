@@ -38,11 +38,254 @@ function formatTimeAgo(dateStr: string): string {
   return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
 }
 
-export default function UploadPage() {
-  const [uploadType, setUploadType] = useState<UploadType>('cv');
+// Upload Box Component
+function UploadBox({
+  type,
+  title,
+  description,
+  icon,
+  accentColor,
+  onUploadComplete,
+}: {
+  type: UploadType;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  accentColor: string;
+  onUploadComplete: () => void;
+}) {
   const [files, setFiles] = useState<FileStatus[]>([]);
   const [uploading, setUploading] = useState(false);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = e.target.files;
+    if (selectedFiles && selectedFiles.length > 0) {
+      const newFiles: FileStatus[] = Array.from(selectedFiles).map((file) => ({
+        file,
+        status: 'pending' as const,
+      }));
+      setFiles((prev) => [...prev, ...newFiles]);
+    }
+    e.target.value = '';
+  };
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const clearCompleted = () => {
+    setFiles((prev) => prev.filter((f) => f.status !== 'success'));
+  };
+
+  const handleUpload = async () => {
+    const pendingFiles = files.filter((f) => f.status === 'pending');
+    if (pendingFiles.length === 0) return;
+
+    setUploading(true);
+
+    for (let i = 0; i < files.length; i++) {
+      if (files[i].status !== 'pending') continue;
+
+      setFiles((prev) =>
+        prev.map((f, idx) => (idx === i ? { ...f, status: 'uploading' as const } : f))
+      );
+
+      try {
+        const result = await api.uploadDocument(files[i].file, type);
+        if (result.success) {
+          setFiles((prev) =>
+            prev.map((f, idx) => (idx === i ? { ...f, status: 'success' as const } : f))
+          );
+        } else {
+          setFiles((prev) =>
+            prev.map((f, idx) =>
+              idx === i
+                ? { ...f, status: 'error' as const, error: result.errors?.join(', ') || 'Upload failed' }
+                : f
+            )
+          );
+        }
+      } catch (err) {
+        setFiles((prev) =>
+          prev.map((f, idx) =>
+            idx === i
+              ? { ...f, status: 'error' as const, error: err instanceof Error ? err.message : 'Upload failed' }
+              : f
+          )
+        );
+      }
+    }
+
+    setUploading(false);
+    onUploadComplete();
+  };
+
+  const pendingCount = files.filter((f) => f.status === 'pending').length;
+  const successCount = files.filter((f) => f.status === 'success').length;
+  const errorCount = files.filter((f) => f.status === 'error').length;
+
+  const inputId = `file-input-${type}`;
+
+  return (
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 flex flex-col">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className={`w-10 h-10 rounded-xl ${accentColor} flex items-center justify-center`}>
+          {icon}
+        </div>
+        <div>
+          <h3 className="font-semibold text-gray-900">{title}</h3>
+          <p className="text-sm text-gray-500">{description}</p>
+        </div>
+      </div>
+
+      {/* Drop Zone */}
+      <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors mb-4 flex-shrink-0 ${
+        uploading ? 'border-gray-200 bg-gray-50' : 'border-gray-300 hover:border-purple-400'
+      }`}>
+        <input
+          id={inputId}
+          type="file"
+          accept=".pdf,.docx"
+          multiple
+          onChange={handleFileChange}
+          disabled={uploading}
+          className="hidden"
+        />
+        <label
+          htmlFor={inputId}
+          className={`cursor-pointer flex flex-col items-center ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <svg
+            className="w-10 h-10 text-gray-400 mb-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+            />
+          </svg>
+          <span className="text-gray-600 text-sm">Click to select files</span>
+          <span className="text-gray-400 text-xs mt-1">PDF or DOCX</span>
+        </label>
+      </div>
+
+      {/* File List */}
+      {files.length > 0 && (
+        <div className="mb-4 flex-1 min-h-0">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-gray-600">{files.length} file{files.length > 1 ? 's' : ''}</span>
+            {successCount > 0 && (
+              <button
+                onClick={clearCompleted}
+                className="text-xs text-purple-600 hover:text-purple-800"
+              >
+                Clear completed
+              </button>
+            )}
+          </div>
+          <div className="space-y-1.5 max-h-40 overflow-y-auto">
+            {files.map((fileStatus, index) => (
+              <div
+                key={`${fileStatus.file.name}-${index}`}
+                className={`flex items-center justify-between p-2 rounded-lg border text-sm ${
+                  fileStatus.status === 'success'
+                    ? 'bg-green-50 border-green-200'
+                    : fileStatus.status === 'error'
+                    ? 'bg-red-50 border-red-200'
+                    : fileStatus.status === 'uploading'
+                    ? 'bg-purple-50 border-purple-200'
+                    : 'bg-gray-50 border-gray-200'
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  {fileStatus.status === 'uploading' ? (
+                    <svg className="animate-spin w-4 h-4 text-purple-600 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  ) : fileStatus.status === 'success' ? (
+                    <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : fileStatus.status === 'error' ? (
+                    <svg className="w-4 h-4 text-red-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  )}
+                  <span className="truncate text-gray-700">{fileStatus.file.name}</span>
+                </div>
+                {fileStatus.status === 'pending' && !uploading && (
+                  <button
+                    onClick={() => removeFile(index)}
+                    className="p-1 text-gray-400 hover:text-red-500 flex-shrink-0"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Summary */}
+      {(successCount > 0 || errorCount > 0) && !uploading && (
+        <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+          <p className="text-gray-600">
+            {successCount > 0 && <span className="text-green-600">{successCount} succeeded</span>}
+            {successCount > 0 && errorCount > 0 && ' • '}
+            {errorCount > 0 && <span className="text-red-600">{errorCount} failed</span>}
+          </p>
+          {successCount > 0 && (
+            <Link
+              to={type === 'cv' ? '/candidates' : '/positions'}
+              className="text-purple-600 hover:text-purple-800 text-xs mt-1 inline-block"
+            >
+              View {type === 'cv' ? 'Candidates' : 'Positions'} →
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* Upload Button */}
+      <button
+        onClick={handleUpload}
+        disabled={pendingCount === 0 || uploading}
+        className="btn-primary w-full px-4 py-2.5 text-white rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-auto"
+      >
+        {uploading ? (
+          <>
+            <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            Uploading...
+          </>
+        ) : (
+          <>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Upload {pendingCount > 0 ? `(${pendingCount})` : ''}
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
+
+export default function UploadPage() {
   // Logs state
   const [logs, setLogs] = useState<ExtractionLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
@@ -92,291 +335,52 @@ export default function UploadPage() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = e.target.files;
-    if (selectedFiles && selectedFiles.length > 0) {
-      const newFiles: FileStatus[] = Array.from(selectedFiles).map((file) => ({
-        file,
-        status: 'pending' as const,
-      }));
-      setFiles((prev) => [...prev, ...newFiles]);
-    }
-    // Reset input so same file can be selected again
-    e.target.value = '';
-  };
-
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const clearCompleted = () => {
-    setFiles((prev) => prev.filter((f) => f.status !== 'success'));
-  };
-
-  const handleUpload = async () => {
-    const pendingFiles = files.filter((f) => f.status === 'pending');
-    if (pendingFiles.length === 0) return;
-
-    setUploading(true);
-
-    for (let i = 0; i < files.length; i++) {
-      if (files[i].status !== 'pending') continue;
-
-      // Mark as uploading
-      setFiles((prev) =>
-        prev.map((f, idx) => (idx === i ? { ...f, status: 'uploading' as const } : f))
-      );
-
-      try {
-        const result = await api.uploadDocument(files[i].file, uploadType);
-        if (result.success) {
-          setFiles((prev) =>
-            prev.map((f, idx) => (idx === i ? { ...f, status: 'success' as const } : f))
-          );
-        } else {
-          setFiles((prev) =>
-            prev.map((f, idx) =>
-              idx === i
-                ? { ...f, status: 'error' as const, error: result.errors?.join(', ') || 'Upload failed' }
-                : f
-            )
-          );
-        }
-      } catch (err) {
-        setFiles((prev) =>
-          prev.map((f, idx) =>
-            idx === i
-              ? { ...f, status: 'error' as const, error: err instanceof Error ? err.message : 'Upload failed' }
-              : f
-          )
-        );
-      }
-    }
-
-    setUploading(false);
-    // Refresh logs after uploads complete
-    fetchLogs();
-  };
-
-  const pendingCount = files.filter((f) => f.status === 'pending').length;
-  const successCount = files.filter((f) => f.status === 'success').length;
-  const errorCount = files.filter((f) => f.status === 'error').length;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30">
-      <div className="max-w-2xl mx-auto px-6 py-12">
+      <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-purple-800 bg-clip-text text-transparent">
             Upload Documents
           </h1>
           <p className="text-gray-600 mt-2">
-            Upload CVs or job position files to add them to the system.
+            Upload CVs or job positions to add them to the system.
           </p>
         </div>
 
-        {/* Upload Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
-          {/* Document Type Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Document Type
-            </label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="uploadType"
-                  value="cv"
-                  checked={uploadType === 'cv'}
-                  onChange={() => setUploadType('cv')}
-                  disabled={uploading}
-                  className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                />
-                <span className="text-gray-700">CV / Resume</span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="uploadType"
-                  value="job"
-                  checked={uploadType === 'job'}
-                  onChange={() => setUploadType('job')}
-                  disabled={uploading}
-                  className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                />
-                <span className="text-gray-700">Job Position</span>
-              </label>
-            </div>
-          </div>
+        {/* Two Upload Boxes */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* CV Upload Box */}
+          <UploadBox
+            type="cv"
+            title="Upload CVs"
+            description="Add candidate resumes"
+            accentColor="bg-blue-100"
+            icon={
+              <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            }
+            onUploadComplete={fetchLogs}
+          />
 
-          {/* File Input */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Select Files
-            </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-purple-400 transition-colors">
-              <input
-                id="file-input"
-                type="file"
-                accept=".pdf,.docx"
-                multiple
-                onChange={handleFileChange}
-                disabled={uploading}
-                className="hidden"
-              />
-              <label
-                htmlFor="file-input"
-                className={`cursor-pointer flex flex-col items-center ${uploading ? 'opacity-50' : ''}`}
-              >
-                <svg
-                  className="w-12 h-12 text-gray-400 mb-3"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                  />
-                </svg>
-                <span className="text-gray-600">Click to select files</span>
-                <span className="text-gray-400 text-sm mt-1">PDF or DOCX (multiple allowed)</span>
-              </label>
-            </div>
-          </div>
-
-          {/* File List */}
-          {files.length > 0 && (
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Selected Files ({files.length})
-                </label>
-                {successCount > 0 && (
-                  <button
-                    onClick={clearCompleted}
-                    className="text-sm text-purple-600 hover:text-purple-800"
-                  >
-                    Clear completed
-                  </button>
-                )}
-              </div>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {files.map((fileStatus, index) => (
-                  <div
-                    key={`${fileStatus.file.name}-${index}`}
-                    className={`flex items-center justify-between p-3 rounded-lg border ${
-                      fileStatus.status === 'success'
-                        ? 'bg-green-50 border-green-200'
-                        : fileStatus.status === 'error'
-                        ? 'bg-red-50 border-red-200'
-                        : fileStatus.status === 'uploading'
-                        ? 'bg-purple-50 border-purple-200'
-                        : 'bg-gray-50 border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      {/* Status Icon */}
-                      {fileStatus.status === 'uploading' ? (
-                        <svg className="animate-spin w-5 h-5 text-purple-600 flex-shrink-0" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                      ) : fileStatus.status === 'success' ? (
-                        <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : fileStatus.status === 'error' ? (
-                        <svg className="w-5 h-5 text-red-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-700 truncate">
-                          {fileStatus.file.name}
-                        </p>
-                        {fileStatus.error && (
-                          <p className="text-xs text-red-600 truncate">{fileStatus.error}</p>
-                        )}
-                      </div>
-                    </div>
-                    {/* Remove button - only for pending files */}
-                    {fileStatus.status === 'pending' && !uploading && (
-                      <button
-                        onClick={() => removeFile(index)}
-                        className="p-1 text-gray-400 hover:text-red-500 flex-shrink-0"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Summary */}
-          {(successCount > 0 || errorCount > 0) && !uploading && (
-            <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm">
-              <p className="font-medium text-gray-700">Upload Summary</p>
-              <p className="mt-1 text-gray-600">
-                {successCount > 0 && (
-                  <span className="text-green-600">{successCount} succeeded</span>
-                )}
-                {successCount > 0 && errorCount > 0 && ' • '}
-                {errorCount > 0 && (
-                  <span className="text-red-600">{errorCount} failed</span>
-                )}
-              </p>
-              {successCount > 0 && (
-                <p className="mt-2">
-                  <Link
-                    to={uploadType === 'cv' ? '/candidates' : '/positions'}
-                    className="text-purple-600 hover:text-purple-800 underline"
-                  >
-                    View {uploadType === 'cv' ? 'Candidates' : 'Positions'}
-                  </Link>
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Upload Button */}
-          <button
-            onClick={handleUpload}
-            disabled={pendingCount === 0 || uploading}
-            className="btn-primary w-full px-6 py-3 text-white rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {uploading ? (
-              <>
-                <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Uploading...
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-                Upload {pendingCount > 0 ? `(${pendingCount} file${pendingCount > 1 ? 's' : ''})` : ''}
-              </>
-            )}
-          </button>
+          {/* Position Upload Box */}
+          <UploadBox
+            type="job"
+            title="Upload Positions"
+            description="Add job descriptions"
+            accentColor="bg-purple-100"
+            icon={
+              <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            }
+            onUploadComplete={fetchLogs}
+          />
         </div>
 
         {/* Recent Uploads (Extraction Logs) */}
-        <div className="mt-8 bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Recent Uploads</h2>
@@ -454,7 +458,11 @@ export default function UploadPage() {
                         {/* File Name */}
                         <span className="text-sm font-medium text-gray-700 truncate">{fileName}</span>
                         {/* Type Badge */}
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 flex-shrink-0 uppercase">
+                        <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 uppercase ${
+                          log.source_type === 'cv'
+                            ? 'bg-blue-100 text-blue-600'
+                            : 'bg-purple-100 text-purple-600'
+                        }`}>
                           {log.source_type}
                         </span>
                       </div>
@@ -543,14 +551,14 @@ export default function UploadPage() {
                               </div>
                             )}
 
-                            {/* Link to Candidate */}
-                            {log.status === 'success' && log.candidate_id && (
+                            {/* Link to Candidate/Position */}
+                            {log.status === 'success' && (
                               <div className="pt-2 border-t border-gray-200">
                                 <Link
-                                  to={`/candidates`}
+                                  to={log.source_type === 'cv' ? '/candidates' : '/positions'}
                                   className="text-purple-600 hover:text-purple-800 font-medium"
                                 >
-                                  View Candidate →
+                                  View {log.source_type === 'cv' ? 'Candidate' : 'Position'} →
                                 </Link>
                               </div>
                             )}
