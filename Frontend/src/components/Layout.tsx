@@ -104,6 +104,23 @@ export default function Layout() {
                     Upload
                   </span>
                 </NavLink>
+                <NavLink
+                  to="/chat"
+                  className={({ isActive }) =>
+                    `nav-link px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
+                      isActive
+                        ? 'bg-gradient-to-r from-purple-500/10 to-purple-600/10 text-purple-700 shadow-sm'
+                        : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50/50'
+                    }`
+                  }
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    Chat
+                  </span>
+                </NavLink>
               </nav>
             </div>
 

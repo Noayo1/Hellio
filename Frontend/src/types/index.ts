@@ -115,3 +115,27 @@ export interface ExtractionLogDetail extends ExtractionLog {
   llm_parsed_data: unknown;
   validation_errors: string[];
 }
+
+// === CHAT ===
+
+export interface ChatTrace {
+  sql: string;
+  rowCount: number;
+  rows: unknown[];
+  executionTimeMs: number;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  trace?: ChatTrace;
+  error?: string;
+  suggestion?: string;
+}
+
+export interface ChatResponse {
+  answer?: string;
+  trace?: ChatTrace;
+  error?: string;
+  suggestion?: string;
+}

@@ -163,6 +163,27 @@ class ApiClient {
   async getExtractionLogDetail(id: string): Promise<unknown> {
     return this.request(`/ingestion/logs/${id}`);
   }
+
+  // Chat
+  async sendChatMessage(
+    question: string,
+    history?: { role: 'user' | 'assistant'; content: string }[]
+  ): Promise<{
+    answer?: string;
+    trace?: {
+      sql: string;
+      rowCount: number;
+      rows: unknown[];
+      executionTimeMs: number;
+    };
+    error?: string;
+    suggestion?: string;
+  }> {
+    return this.request('/chat', {
+      method: 'POST',
+      body: JSON.stringify({ question, history }),
+    });
+  }
 }
 
 export const api = new ApiClient();
