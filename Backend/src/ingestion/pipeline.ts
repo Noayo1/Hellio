@@ -88,7 +88,6 @@ export async function processDocument(input: DocumentInput): Promise<ExtractionR
       llmRawResponse: llmResult.rawResponse,
       llmParsedData: llmResult.data,
       llmDurationMs: llmResult.durationMs,
-      promptVersion: llmResult.promptVersion,
     });
 
     if (llmResult.error) {

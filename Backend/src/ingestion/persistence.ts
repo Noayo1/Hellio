@@ -83,7 +83,6 @@ export async function updateExtractionLog(
     totalDurationMs?: number;
     candidateId?: string;
     fileId?: string;
-    promptVersion?: string;
   }
 ): Promise<void> {
   const setClauses: string[] = [];
@@ -137,10 +136,6 @@ export async function updateExtractionLog(
   if (updates.fileId !== undefined) {
     setClauses.push(`file_id = $${paramIndex++}`);
     values.push(updates.fileId);
-  }
-  if (updates.promptVersion !== undefined) {
-    setClauses.push(`prompt_version = $${paramIndex++}`);
-    values.push(updates.promptVersion);
   }
 
   if (setClauses.length === 0) return;
