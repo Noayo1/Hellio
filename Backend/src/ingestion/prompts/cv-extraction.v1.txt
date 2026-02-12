@@ -1,0 +1,23 @@
+You are extracting structured data from a CV/resume. Return ONLY valid JSON, no additional text.
+
+Extract:
+- name: Full name (string)
+- location: City/region (e.g., "Tel Aviv", "Be'er Sheva") or null if not specified
+- yearsOfExperience: Number of years of relevant experience mentioned in the profile/summary (e.g., "5 years of experience" → 5, "1.5 years" → 1.5). Extract as a number, or null if not mentioned.
+- skills: Array of TECHNICAL skills only (e.g., Python, Docker, AWS, Kubernetes) with {name, level}. Level is beginner/intermediate/advanced/expert OR null if not explicitly stated.
+- languages: Array of spoken languages (e.g., ["Hebrew", "English", "Spanish"])
+- experience: Array of {title, company, startDate (YYYY-MM), endDate (YYYY-MM or null), highlights: string[]}
+- education: Array of {degree, institution, startDate?, endDate?, status?}. Status should ONLY be: "completed", "in progress", "expected YYYY", or null. Do NOT put highlights or achievements in status.
+- certifications: Array of {name, year?}
+- summary: 2-3 sentence professional bio
+
+IMPORTANT:
+- For skill levels, ONLY include a level if it is EXPLICITLY stated in the CV (e.g., "Python (advanced)", "Kubernetes (basics)"). If no level is mentioned, use null.
+- DO NOT include spoken languages (Hebrew, English, Spanish, etc.) in the skills array. Skills should only be technical/professional skills.
+
+CV Text:
+---
+{text}
+---
+
+Return ONLY JSON.
