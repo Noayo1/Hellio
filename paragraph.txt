@@ -1,0 +1,7 @@
+I extract emails using regex because emails follow a clear and predictable pattern (like xxx@domain.com), which allows the code to detect them with full accuracy and without any extra cost.
+
+Skills are different, so I use an LLM to extract them. Skills require understanding context because CVs can describe them in many different ways, such as “Python (advanced)”, “Proficient in Docker”, or simply listing technologies like “AWS, Kubernetes, Terraform”. The LLM helps recognize these as skills even when they are written differently.
+
+This approach helps me balance performance and accuracy. I use fast and deterministic code for structured patterns like emails, and I use the more expensive LLM only for fields that require human-like understanding.
+
+If the LLM returns incorrect or incomplete data, the system still continues to work. I use lenient validation with fallback defaults, such as setting the name to “Unknown Candidate” or adding a generic summary if data is missing. Invalid entries are filtered out, and the upload process never fails. This way, every CV is still saved, even if some extracted details are incomplete.
