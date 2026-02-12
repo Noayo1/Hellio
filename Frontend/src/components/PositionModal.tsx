@@ -115,19 +115,48 @@ export default function PositionModal({ position, candidates, onClose, onUpdate,
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mr-12">
                   {isEditing ? (
-                    <select
-                      value={editedPosition.status}
-                      onChange={(e) => setEditedPosition({ ...editedPosition, status: e.target.value as Position['status'] })}
-                      className="px-3 py-1.5 rounded-full text-sm font-medium border border-gray-300 focus:border-purple-500 outline-none"
-                    >
-                      <option value="open">Open</option>
-                      <option value="closed">Closed</option>
-                      <option value="on_hold">On Hold</option>
-                    </select>
+                    <>
+                      <select
+                        value={editedPosition.status}
+                        onChange={(e) => setEditedPosition({ ...editedPosition, status: e.target.value as Position['status'] })}
+                        className="px-3 py-1.5 rounded-full text-sm font-medium border border-gray-300 focus:border-purple-500 outline-none"
+                      >
+                        <option value="open">Open</option>
+                        <option value="closed">Closed</option>
+                        <option value="on_hold">On Hold</option>
+                      </select>
+                      <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+                      >
+                        {saving ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        onClick={handleCancel}
+                        disabled={saving}
+                        className="px-3 py-1.5 text-gray-600 hover:text-gray-800 text-sm font-medium"
+                      >
+                        Cancel
+                      </button>
+                    </>
                   ) : (
-                    <StatusBadge status={position.status} />
+                    <>
+                      <StatusBadge status={position.status} />
+                      {onUpdate && (
+                        <button
+                          onClick={() => setIsEditing(true)}
+                          className="p-1.5 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg"
+                          title="Edit Position"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -196,39 +225,6 @@ export default function PositionModal({ position, candidates, onClose, onUpdate,
                 </p>
               ) : null}
 
-              {/* Edit/Save buttons */}
-              {onUpdate && (
-                <div className="mt-4 flex gap-2">
-                  {isEditing ? (
-                    <>
-                      <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
-                      >
-                        {saving ? 'Saving...' : 'Save'}
-                      </button>
-                      <button
-                        onClick={handleCancel}
-                        disabled={saving}
-                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="px-4 py-2 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-100 flex items-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                      Edit Position
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* Description */}
