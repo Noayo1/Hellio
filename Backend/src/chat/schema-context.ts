@@ -97,10 +97,22 @@ TABLE position_requirements (
   required BOOLEAN
 )
 
+TABLE languages (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE  -- Language names (e.g., 'English', 'Spanish', 'Russian')
+)
+
+TABLE candidate_languages (
+  candidate_id VARCHAR(50) REFERENCES candidates(id),
+  language_id INTEGER REFERENCES languages(id),
+  PRIMARY KEY (candidate_id, language_id)
+)
+
 RELATIONSHIPS:
 - candidates <-> skills: Many-to-many through candidate_skills (with proficiency level)
 - candidates <-> positions: Many-to-many through candidate_positions (assignment relationship)
 - positions <-> skills: Many-to-many through position_skills (required skills for position)
+- candidates <-> languages: Many-to-many through candidate_languages
 - candidates have many experiences, education records, and certifications
 - positions have many requirements
 `.trim();
