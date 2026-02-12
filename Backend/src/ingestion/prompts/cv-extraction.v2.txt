@@ -8,10 +8,18 @@ Extract:
 - yearsOfExperience: Extract ONLY if explicitly stated in profile text (e.g., "1-2 שנות ניסיון" → 1.5). Do NOT calculate from job dates. Return null if not stated.
 - skills: Array of {name, level}. Level: beginner/intermediate/advanced/expert or null if not stated.
 - languages: Array of spoken languages
-- experience: Array of {title, company, startDate, endDate, highlights: string[]}. Dates: use YYYY-MM if month is stated, YYYY if only year. Do NOT invent months. TRANSLATE all highlights to English.
-- education: Array of {degree, institution, startDate?, endDate?, status?}. Same date rules: YYYY-MM or YYYY only.
+- experience: Array of {title, company, startDate, endDate, highlights: string[]}. TRANSLATE all highlights to English.
+- education: Array of {degree, institution, startDate?, endDate?, status?}
+
 - certifications: Array of {name, year?}
 - summary: TRANSLATE the profile/summary section to English. Keep it faithful to the original - do not add or embellish.
+
+DATE FORMAT RULES (CRITICAL):
+- If CV shows "2021 - Present" → startDate: "2021", endDate: "Present"
+- If CV shows "January 2021 - December 2023" → startDate: "2021-01", endDate: "2023-12"
+- If CV shows "2020 - 2021" → startDate: "2020", endDate: "2021"
+- NEVER add "-01" or any month if the CV only shows a year
+- Use "Present" for ongoing positions, not null
 
 RULES:
 - EVERY string in the output JSON must be in English. No Hebrew or other languages in the output.

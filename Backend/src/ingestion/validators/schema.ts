@@ -104,13 +104,12 @@ const dateStringSchema = z.string()
   .catch(getCurrentYearMonth());
 
 // Handle "Present", "Current", null for end dates
-// Lenient: any parsing error results in null (ongoing position)
-// IMPORTANT: Check for "Present" FIRST before dateStringSchema transforms it
+// Keep "Present" as-is for ongoing positions
 const endDateSchema = z.union([
-  z.string().regex(/^(present|current|now|ongoing)$/i).transform(() => null),
-  z.null(),
+  z.string().regex(/^(present|current|now|ongoing)$/i).transform(() => "Present"),
+  z.null().transform(() => "Present"),
   dateStringSchema,
-]).nullable().optional().catch(null);
+]).catch("Present");
 
 // Skill with optional level (only extract if explicitly stated in CV)
 // Lenient: name defaults to empty string (will be filtered out later)
