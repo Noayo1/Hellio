@@ -47,8 +47,8 @@ async function getCandidateById(candidateId: string) {
   // Get experiences with highlights
   const experiencesResult = await pool.query(
     `SELECT id, title, company, location,
-            TO_CHAR(start_date, 'YYYY-MM') as "startDate",
-            TO_CHAR(end_date, 'YYYY-MM') as "endDate"
+            start_date as "startDate",
+            end_date as "endDate"
      FROM experiences
      WHERE candidate_id = $1
      ORDER BY sort_order`,
@@ -78,8 +78,8 @@ async function getCandidateById(candidateId: string) {
   // Get education
   const educationResult = await pool.query(
     `SELECT degree, institution,
-            TO_CHAR(start_date, 'YYYY-MM') as "startDate",
-            TO_CHAR(end_date, 'YYYY-MM') as "endDate",
+            start_date as "startDate",
+            end_date as "endDate",
             status
      FROM education
      WHERE candidate_id = $1
