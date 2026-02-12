@@ -5,7 +5,6 @@ import DashboardPage from './pages/DashboardPage';
 import CandidatesPage from './pages/CandidatesPage';
 import PositionsPage from './pages/PositionsPage';
 import UploadPage from './pages/UploadPage';
-import ChatPage from './pages/ChatPage';
 import LoginPage from './pages/LoginPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -47,7 +46,6 @@ function AppRoutes() {
         <Route path="candidates" element={<CandidatesPage />} />
         <Route path="positions" element={<PositionsPage />} />
         <Route path="upload" element={<UploadPage />} />
-        <Route path="chat" element={<ChatPage />} />
       </Route>
     </Routes>
   );

@@ -15,7 +15,7 @@ export default function PositionsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('open');
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const [activePosition, setActivePosition] = useState<Position | null>(null);
 
   // Fetch data from API
