@@ -242,6 +242,44 @@ router.get('/:id/files', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// PUT /api/candidates/:id - Update candidate (admin only)
+router.put('/:id', requireAdmin, async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const { name, email, phone, location, linkedIn, github, status, summary, yearsOfExperience } = req.body;
+
+  try {
+    // Check if candidate exists
+    const existing = await getCandidateById(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Candidate not found' });
+    }
+
+    // Update candidate
+    await pool.query(
+      `UPDATE candidates SET
+         name = COALESCE($1, name),
+         email = COALESCE($2, email),
+         phone = COALESCE($3, phone),
+         location = COALESCE($4, location),
+         linkedin = COALESCE($5, linkedin),
+         github = COALESCE($6, github),
+         status = COALESCE($7, status),
+         summary = COALESCE($8, summary),
+         years_of_experience = COALESCE($9, years_of_experience),
+         updated_at = NOW()
+       WHERE id = $10`,
+      [name, email, phone, location, linkedIn, github, status, summary, yearsOfExperience, id]
+    );
+
+    // Return updated candidate
+    const updatedCandidate = await getCandidateById(id);
+    res.json(updatedCandidate);
+  } catch (error) {
+    console.error('Error updating candidate:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // DELETE /api/candidates/:id - Delete candidate (admin only)
 router.delete('/:id', requireAdmin, async (req: AuthRequest, res: Response) => {
   const { id } = req.params;

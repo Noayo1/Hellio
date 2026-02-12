@@ -173,7 +173,7 @@ export default function PositionsPage() {
           position={activePosition}
           candidates={getCandidatesForPosition(activePosition.id)}
           onClose={() => setActivePosition(null)}
-          onUpdate={handleUpdatePosition}
+          onUpdate={isAdmin ? handleUpdatePosition : undefined}
           onDelete={isAdmin ? handleDeletePosition : undefined}
         />
       )}

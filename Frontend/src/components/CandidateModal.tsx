@@ -10,6 +10,8 @@ interface CandidateModalProps {
   onClose: () => void;
   onAssignPosition: (candidateId: string, positionId: string, assign: boolean) => void;
   onDelete?: (id: string) => void;
+  onUpdate?: (candidate: Candidate) => void;
+  isAdmin?: boolean;
 }
 
 export default function CandidateModal({
@@ -18,8 +20,37 @@ export default function CandidateModal({
   onClose,
   onAssignPosition,
   onDelete,
+  onUpdate,
+  isAdmin,
 }: CandidateModalProps) {
   const [files, setFiles] = useState<CandidateFile[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: candidate.name,
+    email: candidate.email,
+    phone: candidate.phone || '',
+    location: candidate.location,
+    status: candidate.status,
+    summary: candidate.summary,
+    linkedIn: candidate.linkedIn || '',
+    github: candidate.github || '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!onUpdate) return;
+    setSaving(true);
+    try {
+      await api.updateCandidate(candidate.id, editForm);
+      onUpdate({ ...candidate, ...editForm } as Candidate);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to update candidate:', error);
+      alert('Failed to save changes');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handlePositionToggle = (positionId: string) => {
     const isAssigned = candidate.positionIds.includes(positionId);
@@ -76,52 +107,161 @@ export default function CandidateModal({
           <div className="p-8 relative">
             {/* Header */}
             <div className="mb-8">
+              {/* Edit/Save buttons for admin */}
+              {isAdmin && (
+                <div className="flex justify-end mb-4">
+                  {isEditing ? (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setIsEditing(false)}
+                        disabled={saving}
+                        className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 rounded-lg"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="px-4 py-1.5 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg disabled:bg-gray-300"
+                      >
+                        {saving ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="px-4 py-1.5 text-sm font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg flex items-center gap-1.5"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-purple-200">
-                  {candidate.name.charAt(0)}
+                  {(isEditing ? editForm.name : candidate.name).charAt(0)}
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-800 bg-clip-text text-transparent">
-                    {candidate.name}
-                  </h2>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      className="text-2xl font-bold text-gray-900 border-b-2 border-purple-300 focus:border-purple-500 outline-none w-full bg-transparent"
+                    />
+                  ) : (
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-800 bg-clip-text text-transparent">
+                      {candidate.name}
+                    </h2>
+                  )}
                   {candidate.experience[0] && (
                     <p className="text-lg text-gray-600 mt-0.5">{candidate.experience[0].title}</p>
                   )}
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 mt-5 text-sm text-gray-500">
-                <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg">
-                  <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  {candidate.location}
-                </span>
-                <a
-                  href={`mailto:${candidate.email}`}
-                  className="flex items-center gap-1.5 bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  {candidate.email}
-                </a>
-                {candidate.phone && (
+              {isEditing ? (
+                <div className="mt-5 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Location</label>
+                      <input
+                        type="text"
+                        value={editForm.location}
+                        onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Email</label>
+                      <input
+                        type="email"
+                        value={editForm.email}
+                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Phone</label>
+                      <input
+                        type="text"
+                        value={editForm.phone}
+                        onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Status</label>
+                      <select
+                        value={editForm.status}
+                        onChange={(e) => setEditForm({ ...editForm, status: e.target.value as 'active' | 'inactive' | 'hired' })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="hired">Hired</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">LinkedIn</label>
+                      <input
+                        type="text"
+                        value={editForm.linkedIn}
+                        onChange={(e) => setEditForm({ ...editForm, linkedIn: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="linkedin.com/in/username"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">GitHub</label>
+                      <input
+                        type="text"
+                        value={editForm.github}
+                        onChange={(e) => setEditForm({ ...editForm, github: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="github.com/username"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-3 mt-5 text-sm text-gray-500">
                   <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg">
                     <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    {candidate.phone}
+                    {candidate.location}
                   </span>
-                )}
-                <span className="flex items-center gap-1.5 bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg font-medium">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {candidate.yearsOfExperience ?? calculateYearsOfExperience(candidate.experience)} years experience
-                </span>
-              </div>
+                  <a
+                    href={`mailto:${candidate.email}`}
+                    className="flex items-center gap-1.5 bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    {candidate.email}
+                  </a>
+                  {candidate.phone && (
+                    <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg">
+                      <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      {candidate.phone}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1.5 bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg font-medium">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {candidate.yearsOfExperience ?? calculateYearsOfExperience(candidate.experience)} years experience
+                  </span>
+                </div>
+              )}
 
               <div className="flex gap-3 mt-5">
                 {candidate.linkedIn && (
@@ -160,7 +300,16 @@ export default function CandidateModal({
 
             {/* Summary */}
             <Section title="Summary" icon="document">
-              <p className="text-gray-700 leading-relaxed">{candidate.summary}</p>
+              {isEditing ? (
+                <textarea
+                  value={editForm.summary}
+                  onChange={(e) => setEditForm({ ...editForm, summary: e.target.value })}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                />
+              ) : (
+                <p className="text-gray-700 leading-relaxed">{candidate.summary}</p>
+              )}
             </Section>
 
             {/* Skills */}

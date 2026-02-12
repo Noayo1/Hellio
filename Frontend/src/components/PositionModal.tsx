@@ -168,7 +168,7 @@ export default function PositionModal({ position, candidates, onClose, onUpdate,
                       </svg>
                       {position.location}
                     </span>
-                    <WorkTypeBadge type={position.workType} />
+                    {position.workType && <WorkTypeBadge type={position.workType} />}
                     <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg">
                       <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />

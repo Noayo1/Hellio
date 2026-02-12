@@ -77,6 +77,13 @@ class ApiClient {
     return this.request(`/candidates/${id}`, { method: 'DELETE' });
   }
 
+  async updateCandidate(id: string, data: object): Promise<unknown> {
+    return this.request(`/candidates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Positions
   async getPositions(): Promise<unknown[]> {
     return this.request('/positions');

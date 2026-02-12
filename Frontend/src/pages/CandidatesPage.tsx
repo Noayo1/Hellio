@@ -262,6 +262,13 @@ export default function CandidatesPage() {
           onClose={() => setActiveCandidate(null)}
           onAssignPosition={handleAssignPosition}
           onDelete={isAdmin ? handleDeleteCandidate : undefined}
+          isAdmin={isAdmin}
+          onUpdate={(updatedCandidate) => {
+            setCandidates((prev) =>
+              prev.map((c) => (c.id === updatedCandidate.id ? updatedCandidate : c))
+            );
+            setActiveCandidate(updatedCandidate);
+          }}
         />
       )}
 
