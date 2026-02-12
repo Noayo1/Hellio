@@ -12,7 +12,7 @@ RULES:
 7. For position-candidate relationships, use candidate_positions table
 8. Use COUNT(*) for counting, GROUP BY for aggregations
 9. For "positions without candidates", use LEFT JOIN with WHERE IS NULL pattern
-10. SALARY is stored as TEXT (e.g., "12,000-15,000 NIS/month"). Do NOT cast to NUMERIC. Use ILIKE patterns to search salary ranges.
+10. SALARY columns: Use salary_min and salary_max (INTEGER) for numeric comparisons. The salary column is TEXT for display only.
 
 EXAMPLE QUERIES:
 
@@ -68,9 +68,15 @@ WHERE LOWER(company) ILIKE '%google%'
 LIMIT 50
 
 Q: Which positions have salary information?
-A: SELECT id, title, company, salary
+A: SELECT id, title, company, salary, salary_min, salary_max
 FROM positions
-WHERE salary IS NOT NULL AND salary != ''
+WHERE salary_min IS NOT NULL OR salary_max IS NOT NULL
+LIMIT 50
+
+Q: Which positions have salary above 14000?
+A: SELECT id, title, company, salary, salary_min, salary_max
+FROM positions
+WHERE salary_min > 14000 OR salary_max > 14000
 LIMIT 50
 
 If the question is NOT about candidates, positions, skills, jobs, hiring, or related HR data, respond with exactly: IRRELEVANT

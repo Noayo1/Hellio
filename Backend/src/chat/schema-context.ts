@@ -31,7 +31,9 @@ TABLE positions (
   description TEXT,
   experience_years INTEGER,
   work_type VARCHAR(20),  -- Values: 'remote', 'hybrid', 'onsite'
-  salary VARCHAR(100),
+  salary VARCHAR(100),  -- Text description for display
+  salary_min INTEGER,   -- Minimum salary in NIS (use for numeric comparisons)
+  salary_max INTEGER,   -- Maximum salary in NIS (use for numeric comparisons)
   contact_name VARCHAR(255),
   contact_email VARCHAR(255),
   created_at TIMESTAMP,

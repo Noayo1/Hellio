@@ -220,6 +220,8 @@ export const jobExtractionSchema = z.object({
   experienceYears: z.number().int().min(0).max(50).optional().catch(undefined),
   workType: workTypeSchema,
   salary: z.string().optional().catch(undefined),
+  salaryMin: z.number().int().min(0).optional().catch(undefined),
+  salaryMax: z.number().int().min(0).optional().catch(undefined),
   contactName: z.string().optional().catch(undefined),
   contactEmail: z.string().email().optional().catch(undefined),
 });

@@ -9,7 +9,9 @@ Extract:
 - skills: Array of skill names
 - experienceYears: Required years (number, optional)
 - workType: remote/onsite/hybrid (optional)
-- salary: Salary info (optional)
+- salary: Salary info as text (optional)
+- salaryMin: Minimum salary as NUMBER (e.g., "12,000-15,000 NIS" → 12000). Extract just the number, no commas or currency.
+- salaryMax: Maximum salary as NUMBER (e.g., "12,000-15,000 NIS" → 15000). If single value like "15,000 NIS", use same for both min and max.
 - contactName, contactEmail (optional)
 
 Job Description:
