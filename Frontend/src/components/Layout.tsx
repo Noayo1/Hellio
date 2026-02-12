@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 function Logo() {
@@ -41,7 +41,7 @@ export default function Layout() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             <div className="flex items-center gap-12">
-              <div className="flex items-center gap-4 group cursor-pointer">
+              <Link to="/" className="flex items-center gap-4 group">
                 <Logo />
                 <div>
                   <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 via-purple-800 to-gray-900 bg-clip-text text-transparent">
@@ -51,8 +51,26 @@ export default function Layout() {
                     Talent Platform
                   </p>
                 </div>
-              </div>
+              </Link>
               <nav className="flex gap-2">
+                <NavLink
+                  to="/"
+                  end
+                  className={({ isActive }) =>
+                    `nav-link px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
+                      isActive
+                        ? 'bg-gradient-to-r from-purple-500/10 to-purple-600/10 text-purple-700 shadow-sm'
+                        : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50/50'
+                    }`
+                  }
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Dashboard
+                  </span>
+                </NavLink>
                 <NavLink
                   to="/candidates"
                   className={({ isActive }) =>

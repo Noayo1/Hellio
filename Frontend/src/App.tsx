@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
+import DashboardPage from './pages/DashboardPage';
 import CandidatesPage from './pages/CandidatesPage';
 import PositionsPage from './pages/PositionsPage';
 import UploadPage from './pages/UploadPage';
@@ -32,7 +33,7 @@ function AppRoutes() {
     <Routes>
       <Route
         path="/login"
-        element={user ? <Navigate to="/candidates" replace /> : <LoginPage />}
+        element={user ? <Navigate to="/" replace /> : <LoginPage />}
       />
       <Route
         path="/"
@@ -42,7 +43,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/candidates" replace />} />
+        <Route index element={<DashboardPage />} />
         <Route path="candidates" element={<CandidatesPage />} />
         <Route path="positions" element={<PositionsPage />} />
         <Route path="upload" element={<UploadPage />} />
