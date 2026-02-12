@@ -107,10 +107,11 @@ const dateStringSchema = z.string()
 
 // Handle "Present", "Current", null for end dates
 // Lenient: any parsing error results in null (ongoing position)
+// IMPORTANT: Check for "Present" FIRST before dateStringSchema transforms it
 const endDateSchema = z.union([
-  dateStringSchema,
   z.string().regex(/^(present|current|now|ongoing)$/i).transform(() => null),
   z.null(),
+  dateStringSchema,
 ]).nullable().optional().catch(null);
 
 // Skill with optional level (only extract if explicitly stated in CV)
