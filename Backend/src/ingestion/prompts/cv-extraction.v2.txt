@@ -1,26 +1,25 @@
 You are extracting structured data from a CV/resume. Return ONLY valid JSON, no additional text.
 
-IMPORTANT TRANSLATION RULES:
-- If the CV is in a language other than English, translate ALL content to English.
-- Translate WORD FOR WORD. Do NOT paraphrase, summarize, or invent any information.
-- Only extract information that is EXPLICITLY written in the CV. Do NOT add, embellish, or guess.
-- If something is unclear, translate it literally as-is.
+STEP 1 - TRANSLATE: If the CV contains non-English text (Hebrew, Spanish, etc.), first mentally translate it word-for-word to English. Do NOT paraphrase or interpret.
+
+STEP 2 - EXTRACT: Extract ONLY information that is EXPLICITLY written. Do NOT calculate, infer, or invent anything.
 
 Extract:
 - name: Full name (string) - transliterate non-Latin names to English
 - location: City/region (e.g., "Tel Aviv", "Be'er Sheva") or null if not specified
-- yearsOfExperience: Number of years of relevant experience mentioned in the profile/summary (e.g., "5 years of experience" → 5, "1.5 years" → 1.5). Extract as a number, or null if not mentioned.
-- skills: Array of TECHNICAL skills only (e.g., Python, Docker, AWS, Kubernetes) with {name, level}. Level is beginner/intermediate/advanced/expert OR null if not explicitly stated.
-- languages: Array of spoken languages (e.g., ["Hebrew", "English", "Spanish"])
-- experience: Array of {title, company, startDate (YYYY-MM), endDate (YYYY-MM or null), highlights: string[]} - translate job titles, company names, and highlights to English
-- education: Array of {degree, institution, startDate?, endDate?, status?}. Status should ONLY be: "completed", "in progress", "expected YYYY", or null. Translate degree names and institutions to English.
-- certifications: Array of {name, year?} - translate certification names to English
-- summary: 2-3 sentence professional bio in English. Use ONLY information from the CV, do NOT invent or embellish.
+- yearsOfExperience: ONLY extract if explicitly stated in the profile/summary text (e.g., "5 years of experience" → 5, "1-2 שנות ניסיון" → 1.5). Do NOT calculate from work dates. Return null if not explicitly mentioned.
+- skills: Array of TECHNICAL skills only with {name, level}. Level is beginner/intermediate/advanced/expert OR null if not explicitly stated.
+- languages: Array of spoken languages (e.g., ["Hebrew", "English"])
+- experience: Array of {title, company, startDate (YYYY-MM), endDate (YYYY-MM or null), highlights: string[]}. Translate highlights word-for-word.
+- education: Array of {degree, institution, startDate?, endDate?, status?}. Status: "completed", "in progress", "expected YYYY", or null.
+- certifications: Array of {name, year?}
+- summary: Translate the profile/summary section word-for-word to English. Do NOT rewrite or embellish. If no profile section exists, write null.
 
-IMPORTANT:
-- For skill levels, ONLY include a level if it is EXPLICITLY stated in the CV (e.g., "Python (advanced)", "Kubernetes (basics)"). If no level is mentioned, use null.
-- DO NOT include spoken languages (Hebrew, English, Spanish, etc.) in the skills array. Skills should only be technical/professional skills.
-- ALL output must be in English, regardless of the source language.
+CRITICAL RULES:
+- yearsOfExperience: Extract the NUMBER stated in the profile text. Do NOT calculate years from job dates.
+- summary: Direct translation of the profile section only. Do NOT add information from other sections.
+- Do NOT include spoken languages in the skills array.
+- Skill levels: Only include if EXPLICITLY stated (e.g., "Python (advanced)"). Otherwise null.
 
 CV Text:
 ---
