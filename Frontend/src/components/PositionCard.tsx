@@ -59,8 +59,8 @@ const PositionCard = memo(function PositionCard({
   candidatesCount,
   onDelete,
 }: PositionCardProps) {
-  const status = STATUS_CONFIG[position.status];
-  const workType = WORK_TYPE_CONFIG[position.workType];
+  const status = STATUS_CONFIG[position.status] || STATUS_CONFIG.open;
+  const workType = position.workType ? WORK_TYPE_CONFIG[position.workType] : null;
 
   return (
     <div
@@ -117,10 +117,12 @@ const PositionCard = memo(function PositionCard({
       </p>
 
       <div className="flex items-center gap-3 mt-4">
-        <span className="skill-tag inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r from-purple-50 to-purple-100/50 text-purple-700 border border-purple-100/50">
-          {workType.icon}
-          {workType.label}
-        </span>
+        {workType && (
+          <span className="skill-tag inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r from-purple-50 to-purple-100/50 text-purple-700 border border-purple-100/50">
+            {workType.icon}
+            {workType.label}
+          </span>
+        )}
         <span className="flex items-center gap-1.5 text-xs text-gray-600">
           <svg className="w-3.5 h-3.5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />

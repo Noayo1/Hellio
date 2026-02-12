@@ -98,7 +98,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)]">
+    <div className="h-[calc(100vh-180px)] flex flex-col">
       {/* Header */}
       <div className="mb-4 flex justify-between items-start">
         <div>
@@ -117,61 +117,74 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* Sample questions */}
-      {messages.length === 0 && (
-        <div className="mb-4">
-          <p className="text-sm text-gray-500 mb-2">Try these questions:</p>
-          <div className="flex flex-wrap gap-2">
-            {SAMPLE_QUESTIONS.map((q) => (
-              <button
-                key={q}
-                onClick={() => handleSampleQuestion(q)}
-                className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors"
-              >
-                {q}
-              </button>
-            ))}
-          </div>
+      {/* Chat container */}
+      <div className="flex-1 flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* Messages area */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Sample questions when empty */}
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="text-gray-400 mb-4">
+                <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <p className="text-gray-500 mb-4">Try one of these questions:</p>
+              <div className="flex flex-wrap justify-center gap-2 max-w-lg">
+                {SAMPLE_QUESTIONS.map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => handleSampleQuestion(q)}
+                    className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-purple-100 hover:text-purple-700 text-gray-700 rounded-full transition-colors"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Messages */}
+          {messages.map((msg, index) => (
+            <MessageBubble
+              key={index}
+              message={msg}
+              isExpanded={expandedTraces.has(index)}
+              onToggleTrace={() => toggleTrace(index)}
+            />
+          ))}
+
+          {/* Loading indicator */}
+          {loading && (
+            <div className="flex items-center gap-2 text-gray-500">
+              <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-purple-500 rounded-full" />
+              <span>Thinking...</span>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
         </div>
-      )}
 
-      {/* Messages area */}
-      <div className="flex-1 overflow-y-auto space-y-4 pb-4">
-        {messages.map((msg, index) => (
-          <MessageBubble
-            key={index}
-            message={msg}
-            isExpanded={expandedTraces.has(index)}
-            onToggleTrace={() => toggleTrace(index)}
-          />
-        ))}
-        {loading && (
-          <div className="flex items-center gap-2 text-gray-500">
-            <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-500 rounded-full" />
-            <span>Thinking...</span>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+        {/* Input area */}
+        <div className="border-t border-gray-200 p-4 bg-gray-50">
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask about candidates or positions..."
+              disabled={loading}
+              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100 bg-white"
+            />
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className="px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
+            >
+              Send
+            </button>
+          </form>
+        </div>
       </div>
-
-      {/* Input area */}
-      <form onSubmit={handleSubmit} className="mt-4 flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about candidates or positions..."
-          disabled={loading}
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
-        />
-        <button
-          type="submit"
-          disabled={loading || !input.trim()}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-        >
-          Send
-        </button>
-      </form>
     </div>
   );
 }
@@ -188,12 +201,12 @@ function MessageBubble({ message, isExpanded, onToggleTrace }: MessageBubbleProp
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`max-w-[80%] rounded-lg px-4 py-2 ${
+        className={`max-w-[75%] rounded-2xl px-4 py-3 ${
           isUser
-            ? 'bg-blue-600 text-white'
+            ? 'bg-purple-600 text-white rounded-br-md'
             : message.error
-              ? 'bg-red-50 border border-red-200'
-              : 'bg-gray-100 text-gray-900'
+              ? 'bg-red-50 border border-red-200 rounded-bl-md'
+              : 'bg-gray-100 text-gray-900 rounded-bl-md'
         }`}
       >
         {/* Error message */}
@@ -213,10 +226,10 @@ function MessageBubble({ message, isExpanded, onToggleTrace }: MessageBubbleProp
 
         {/* Trace toggle */}
         {message.trace && (
-          <div className="mt-2 pt-2 border-t border-gray-200">
+          <div className="mt-2 pt-2 border-t border-gray-300/50">
             <button
               onClick={onToggleTrace}
-              className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              className="text-sm text-purple-600 hover:text-purple-800 flex items-center gap-1"
             >
               {isExpanded ? '▼' : '▶'} View trace ({message.trace.rowCount} rows)
             </button>
