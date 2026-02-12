@@ -53,51 +53,49 @@ function getCurrentYearMonth(): string {
   return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
 }
 
-// Normalize date format to YYYY-MM
+// Normalize date format - keep YYYY if year-only, YYYY-MM if month specified
 function normalizeDate(date: string): string {
   // Handle "Present", "Current", etc. in startDate (LLM mistake) - use current date
   if (/^(present|current|now|ongoing)$/i.test(date.trim())) {
     return getCurrentYearMonth();
   }
 
-  // Handle year-only format: "2022" → "2022-01"
+  // Handle year-only format: "2022" stays as "2022"
   const yearOnly = date.match(/^(\d{4})$/);
   if (yearOnly) {
-    return `${yearOnly[1]}-01`;
+    return yearOnly[1];
   }
 
-  // Handle YYYY-MM-DD format (extract year-month): "2022-00-00" → "2022-01"
+  // Handle YYYY-MM-DD format (extract year-month): "2022-06-15" → "2022-06"
   const fullDate = date.match(/^(\d{4})-(\d{2})-\d{2}$/);
   if (fullDate) {
     const [, year, month] = fullDate;
     let monthNum = parseInt(month, 10);
-    if (monthNum < 1) monthNum = 1;
-    if (monthNum > 12) monthNum = 12;
+    if (monthNum < 1 || monthNum > 12) return year; // Invalid month, return year only
     return `${year}-${monthNum.toString().padStart(2, '0')}`;
   }
 
   // Handle YYYY-MM format
   const match = date.match(/^(\d{4})-(\d{2})$/);
-  if (!match) return date; // Let validation fail if not matching pattern
+  if (!match) return date; // Return as-is if not matching pattern
 
   const [, year, month] = match;
   let monthNum = parseInt(month, 10);
 
-  // Fix invalid months (00 -> 01, 13+ -> 12)
-  if (monthNum < 1) monthNum = 1;
-  if (monthNum > 12) monthNum = 12;
+  // Invalid months - return year only
+  if (monthNum < 1 || monthNum > 12) return year;
 
   return `${year}-${monthNum.toString().padStart(2, '0')}`;
 }
 
-// Date format: YYYY, YYYY-MM, YYYY-MM-DD, or "Present/Current" (LLM mistake), normalized to YYYY-MM
+// Date format: YYYY or YYYY-MM (keep year-only if no month specified)
 // Lenient: if date parsing fails, return current date as fallback
 const dateStringSchema = z.string()
   .transform((val) => {
-    // Try to normalize, return current date if it fails
+    // Try to normalize
     const normalized = normalizeDate(val);
-    // Check if result is valid YYYY-MM format
-    if (/^\d{4}-\d{2}$/.test(normalized)) {
+    // Check if result is valid YYYY or YYYY-MM format
+    if (/^\d{4}(-\d{2})?$/.test(normalized)) {
       return normalized;
     }
     // Fallback to current date

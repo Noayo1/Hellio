@@ -14,12 +14,11 @@ function generateCandidateId(): string {
 }
 
 /**
- * Convert "YYYY-MM" to "YYYY-MM-01" for DATE type.
+ * Pass through date string as-is (columns are now TEXT type).
+ * Accepts: YYYY, YYYY-MM, or null
  */
 function toDate(dateStr: string | null | undefined): string | null {
   if (!dateStr) return null;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-  if (/^\d{4}-\d{2}$/.test(dateStr)) return `${dateStr}-01`;
   return dateStr;
 }
 
