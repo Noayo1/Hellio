@@ -107,40 +107,6 @@ export default function CandidateModal({
           <div className="p-8 relative">
             {/* Header */}
             <div className="mb-8">
-              {/* Edit/Save buttons for admin */}
-              {isAdmin && (
-                <div className="flex justify-end mb-4">
-                  {isEditing ? (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setIsEditing(false)}
-                        disabled={saving}
-                        className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 rounded-lg"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="px-4 py-1.5 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg disabled:bg-gray-300"
-                      >
-                        {saving ? 'Saving...' : 'Save Changes'}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="px-4 py-1.5 text-sm font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg flex items-center gap-1.5"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                      Edit
-                    </button>
-                  )}
-                </div>
-              )}
-
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-purple-200">
                   {(isEditing ? editForm.name : candidate.name).charAt(0)}
@@ -162,6 +128,39 @@ export default function CandidateModal({
                     <p className="text-lg text-gray-600 mt-0.5">{candidate.experience[0].title}</p>
                   )}
                 </div>
+                {/* Edit/Save buttons for admin */}
+                {isAdmin && (
+                  <div className="flex items-center gap-2 mr-12">
+                    {isEditing ? (
+                      <>
+                        <button
+                          onClick={handleSave}
+                          disabled={saving}
+                          className="px-3 py-1.5 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg disabled:bg-gray-300"
+                        >
+                          {saving ? 'Saving...' : 'Save'}
+                        </button>
+                        <button
+                          onClick={() => setIsEditing(false)}
+                          disabled={saving}
+                          className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setIsEditing(true)}
+                        className="p-1.5 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg"
+                        title="Edit Candidate"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {isEditing ? (
