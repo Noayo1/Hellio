@@ -1,6 +1,10 @@
 You are extracting structured data from a CV/resume. Return ONLY valid JSON, no additional text.
 
-IMPORTANT: If the CV is in a language other than English (e.g., Hebrew, Spanish, French, etc.), translate ALL extracted content to English. The output must always be in English.
+IMPORTANT TRANSLATION RULES:
+- If the CV is in a language other than English, translate ALL content to English.
+- Translate WORD FOR WORD. Do NOT paraphrase, summarize, or invent any information.
+- Only extract information that is EXPLICITLY written in the CV. Do NOT add, embellish, or guess.
+- If something is unclear, translate it literally as-is.
 
 Extract:
 - name: Full name (string) - transliterate non-Latin names to English
@@ -11,7 +15,7 @@ Extract:
 - experience: Array of {title, company, startDate (YYYY-MM), endDate (YYYY-MM or null), highlights: string[]} - translate job titles, company names, and highlights to English
 - education: Array of {degree, institution, startDate?, endDate?, status?}. Status should ONLY be: "completed", "in progress", "expected YYYY", or null. Translate degree names and institutions to English.
 - certifications: Array of {name, year?} - translate certification names to English
-- summary: 2-3 sentence professional bio in English
+- summary: 2-3 sentence professional bio in English. Use ONLY information from the CV, do NOT invent or embellish.
 
 IMPORTANT:
 - For skill levels, ONLY include a level if it is EXPLICITLY stated in the CV (e.g., "Python (advanced)", "Kubernetes (basics)"). If no level is mentioned, use null.
