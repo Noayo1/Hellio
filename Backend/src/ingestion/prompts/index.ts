@@ -16,9 +16,9 @@ function loadPrompt(filename: string): string {
   return readFileSync(join(__dirname, filename), 'utf-8');
 }
 
-// CV Extraction Prompt
-export const CV_PROMPT_VERSION = 'cv-v1';
-export const CV_EXTRACTION_PROMPT = loadPrompt('cv-extraction.v1.txt');
+// CV Extraction Prompt (v2 adds translation of non-English CVs to English)
+export const CV_PROMPT_VERSION = 'cv-v2';
+export const CV_EXTRACTION_PROMPT = loadPrompt('cv-extraction.v2.txt');
 
 // Job Extraction Prompt
 export const JOB_PROMPT_VERSION = 'job-v1';
