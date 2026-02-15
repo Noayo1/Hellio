@@ -103,7 +103,13 @@ export default function ChatWidget() {
     setLoading(true);
 
     try {
-      const response = await api.sendChatMessage(question);
+      // Build history from previous messages (excluding traces/errors for cleaner context)
+      const history = messages.map(m => ({
+        role: m.role,
+        content: m.content || m.error || '',
+      }));
+
+      const response = await api.sendChatMessage(question, history);
       const assistantMessage: ChatMessage = {
         role: 'assistant',
         content: response.answer || '',

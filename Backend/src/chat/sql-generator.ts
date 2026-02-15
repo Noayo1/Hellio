@@ -27,14 +27,37 @@ export interface SQLGenerationResult {
   error?: string;
 }
 
+export interface ChatHistoryItem {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/**
+ * Formats conversation history for inclusion in the prompt.
+ */
+function formatHistory(history: ChatHistoryItem[]): string {
+  if (!history || history.length === 0) return '';
+
+  const formatted = history
+    .slice(-6) // Keep last 6 messages (3 exchanges) for context
+    .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
+    .join('\n');
+
+  return `\n\nPrevious conversation:\n${formatted}\n`;
+}
+
 /**
  * Generates SQL from a natural language question using LLM.
  */
-export async function generateSQL(question: string): Promise<SQLGenerationResult> {
-  // Build the prompt with schema context
+export async function generateSQL(
+  question: string,
+  history?: ChatHistoryItem[]
+): Promise<SQLGenerationResult> {
+  // Build the prompt with schema context and history
+  const historyContext = formatHistory(history || []);
   const prompt = SQL_PROMPT_TEMPLATE
     .replace('{schema}', getSchemaContext())
-    .replace('{question}', question);
+    .replace('{question}', historyContext + 'Current question: ' + question);
 
   const response = await invokeNova(prompt);
 

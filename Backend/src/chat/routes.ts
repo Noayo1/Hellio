@@ -36,7 +36,7 @@ router.use(authMiddleware);
  * Main chat endpoint - receives a question, generates SQL, executes it, and returns a grounded answer.
  */
 router.post('/', async (req: AuthRequest, res: Response) => {
-  const { question } = req.body as ChatRequest;
+  const { question, history } = req.body as ChatRequest;
 
   // Validate input
   if (!question || typeof question !== 'string' || question.trim().length === 0) {
@@ -49,8 +49,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   const trimmedQuestion = question.trim();
 
   try {
-    // Step 1: Generate SQL from question
-    const sqlResult = await generateSQL(trimmedQuestion);
+    // Step 1: Generate SQL from question (with conversation history for context)
+    const sqlResult = await generateSQL(trimmedQuestion, history);
 
     // Handle irrelevant questions
     if (sqlResult.irrelevant) {
