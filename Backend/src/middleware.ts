@@ -48,7 +48,6 @@ export async function authMiddleware(
   }
 }
 
-// Middleware to require admin role for write operations
 export function requireAdmin(
   req: AuthRequest,
   res: Response,

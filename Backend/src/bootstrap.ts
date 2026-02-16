@@ -19,21 +19,19 @@ export async function seedUsers(): Promise<void> {
 
   const passwordHash = await bcrypt.hash(adminPassword, 10);
 
-  // Seed admin user (idempotent)
-  await pool.query(
-    `INSERT INTO users (email, password_hash, name, role)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (email) DO NOTHING`,
-    ['admin@hellio.com', passwordHash, 'Admin', 'admin']
-  );
+  const users = [
+    { email: 'admin@hellio.com', name: 'Admin', role: 'admin' },
+    { email: 'viewer@hellio.com', name: 'Viewer', role: 'viewer' },
+  ];
 
-  // Seed viewer user (idempotent)
-  await pool.query(
-    `INSERT INTO users (email, password_hash, name, role)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (email) DO NOTHING`,
-    ['viewer@hellio.com', passwordHash, 'Viewer', 'viewer']
-  );
+  for (const user of users) {
+    await pool.query(
+      `INSERT INTO users (email, password_hash, name, role)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (email) DO NOTHING`,
+      [user.email, passwordHash, user.name, user.role]
+    );
+  }
 
   console.log('Bootstrap: System users verified');
 }
