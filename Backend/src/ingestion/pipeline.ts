@@ -12,6 +12,10 @@ import {
   persistCandidate,
   persistJob,
 } from './persistence.js';
+import {
+  updateCandidateEmbedding,
+  updatePositionEmbedding,
+} from '../embeddings/index.js';
 
 export interface DocumentInput {
   buffer?: Buffer;
@@ -139,6 +143,14 @@ export async function processDocument(input: DocumentInput): Promise<ExtractionR
         candidateId,
         totalDurationMs: Date.now() - startTime,
       });
+
+      // Stage 6: Generate embedding (non-blocking)
+      try {
+        await updateCandidateEmbedding(candidateId);
+      } catch (embErr) {
+        console.error('Embedding generation failed (non-fatal):', embErr);
+      }
+
       return { success: true, candidateId, extractionLogId: logId };
     }
 
@@ -148,6 +160,14 @@ export async function processDocument(input: DocumentInput): Promise<ExtractionR
       status: 'success',
       totalDurationMs: Date.now() - startTime,
     });
+
+    // Stage 6: Generate embedding (non-blocking)
+    try {
+      await updatePositionEmbedding(positionId);
+    } catch (embErr) {
+      console.error('Embedding generation failed (non-fatal):', embErr);
+    }
+
     return { success: true, positionId, extractionLogId: logId };
 
   } catch (error) {

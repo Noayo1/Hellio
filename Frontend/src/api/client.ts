@@ -171,6 +171,35 @@ class ApiClient {
     return this.request(`/ingestion/logs/${id}`);
   }
 
+  // Suggestions (semantic search)
+  async getSuggestedCandidates(positionId: string): Promise<{
+    suggestions: Array<{
+      id: string;
+      name: string;
+      email: string;
+      similarity: number;
+    }>;
+  }> {
+    return this.request(`/positions/${positionId}/suggest-candidates`);
+  }
+
+  async getSuggestedPositions(
+    candidateId: string,
+    includeExplanation = false
+  ): Promise<{
+    suggestions: Array<{
+      id: string;
+      title: string;
+      company: string;
+      similarity: number;
+      explanation?: string;
+    }>;
+    message?: string;
+  }> {
+    const params = includeExplanation ? '?explain=true' : '';
+    return this.request(`/candidates/${candidateId}/suggest-positions${params}`);
+  }
+
   // Chat
   async sendChatMessage(
     question: string,

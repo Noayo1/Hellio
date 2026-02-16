@@ -139,3 +139,20 @@ export interface ChatResponse {
   error?: string;
   suggestion?: string;
 }
+
+// === SUGGESTIONS (SEMANTIC SEARCH) ===
+
+export interface CandidateSuggestion {
+  id: string;
+  name: string;
+  email: string;
+  similarity: number;
+}
+
+export interface PositionSuggestion {
+  id: string;
+  title: string;
+  company: string;
+  similarity: number;
+  explanation?: string;
+}

@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
-import type { Candidate, Position, CandidateFile } from '../types';
+import type { Candidate, Position, CandidateFile, PositionSuggestion } from '../types';
 import { calculateYearsOfExperience } from '../utils/date';
 import { api } from '../api/client';
 
@@ -12,6 +12,7 @@ interface CandidateModalProps {
   onDelete?: (id: string) => void;
   onUpdate?: (candidate: Candidate) => void;
   isAdmin?: boolean;
+  onSelectPosition?: (positionId: string) => void;
 }
 
 export default function CandidateModal({
@@ -22,6 +23,7 @@ export default function CandidateModal({
   onDelete,
   onUpdate,
   isAdmin,
+  onSelectPosition,
 }: CandidateModalProps) {
   const [files, setFiles] = useState<CandidateFile[]>([]);
   const [isEditing, setIsEditing] = useState(false);
@@ -36,6 +38,9 @@ export default function CandidateModal({
     github: candidate.github || '',
   });
   const [saving, setSaving] = useState(false);
+  const [suggestedPositions, setSuggestedPositions] = useState<PositionSuggestion[]>([]);
+  const [loadingPositions, setLoadingPositions] = useState(false);
+  const [noRelevantPositions, setNoRelevantPositions] = useState(false);
 
   const handleSave = async () => {
     if (!onUpdate) return;
@@ -72,6 +77,19 @@ export default function CandidateModal({
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [onClose]);
+
+  // Fetch suggested positions with explanations
+  useEffect(() => {
+    setLoadingPositions(true);
+    api
+      .getSuggestedPositions(candidate.id, true)
+      .then((data) => {
+        setSuggestedPositions(data.suggestions);
+        setNoRelevantPositions(data.suggestions.length === 0);
+      })
+      .catch((err) => console.error('Failed to load position suggestions:', err))
+      .finally(() => setLoadingPositions(false));
+  }, [candidate.id]);
 
   const formatUrl = (url: string, type: 'linkedin' | 'github'): string => {
     const cleaned = url.replace(/^https?:\/\//, '').replace(/^www\./, '');
@@ -457,6 +475,57 @@ export default function CandidateModal({
               </Section>
             )}
 
+            {/* Suggested Positions */}
+            <Section title="Suggested Positions" icon="lightbulb">
+              {loadingPositions ? (
+                <div className="text-center py-6 text-gray-500">
+                  <svg className="animate-spin h-5 w-5 mx-auto mb-2 text-emerald-500" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Finding relevant positions...
+                </div>
+              ) : noRelevantPositions ? (
+                <div className="text-center py-6 text-gray-400">
+                  No highly relevant positions found for this candidate.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {suggestedPositions.map((pos) => (
+                    <div
+                      key={pos.id}
+                      onClick={() => onSelectPosition?.(pos.id)}
+                      className={`p-4 rounded-xl bg-emerald-50/50 border border-emerald-100 ${
+                        onSelectPosition ? 'cursor-pointer hover:bg-emerald-100/50 hover:border-emerald-200 transition-all' : ''
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="font-medium text-gray-900">{pos.title}</p>
+                          <p className="text-sm text-gray-500">{pos.company}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-emerald-600 font-medium">
+                            {Math.round(pos.similarity * 100)}% match
+                          </span>
+                          {onSelectPosition && (
+                            <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                      {pos.explanation && (
+                        <p className="text-sm text-gray-600 mt-2 italic border-l-2 border-emerald-200 pl-3">
+                          {pos.explanation}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
+
             {/* Position Assignment */}
             <Section title="Assigned Positions" icon="clipboard">
               <div className="space-y-3">
@@ -523,6 +592,9 @@ export default function CandidateModal({
 }
 
 const ICONS = {
+  lightbulb: (
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+  ),
   document: (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
   ),

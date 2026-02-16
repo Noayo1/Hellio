@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
-import type { Position, Candidate } from '../types';
+import type { Position, Candidate, CandidateSuggestion } from '../types';
+import { api } from '../api/client';
 
 interface PositionModalProps {
   position: Position;
@@ -8,12 +9,15 @@ interface PositionModalProps {
   onClose: () => void;
   onUpdate?: (position: Position) => Promise<void>;
   onDelete?: (id: string) => void;
+  onSelectCandidate?: (candidateId: string) => void;
 }
 
-export default function PositionModal({ position, candidates, onClose, onUpdate, onDelete }: PositionModalProps) {
+export default function PositionModal({ position, candidates, onClose, onUpdate, onDelete, onSelectCandidate }: PositionModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedPosition, setEditedPosition] = useState<Position>(position);
   const [saving, setSaving] = useState(false);
+  const [suggestions, setSuggestions] = useState<CandidateSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   const mustHave = position.requirements.filter((r) => r.required);
   const niceToHave = position.requirements.filter((r) => !r.required);
@@ -38,6 +42,18 @@ export default function PositionModal({ position, candidates, onClose, onUpdate,
   useEffect(() => {
     setEditedPosition(position);
   }, [position]);
+
+  // Fetch suggested candidates for open positions
+  useEffect(() => {
+    if (position.status === 'open') {
+      setLoadingSuggestions(true);
+      api
+        .getSuggestedCandidates(position.id)
+        .then((data) => setSuggestions(data.suggestions))
+        .catch((err) => console.error('Failed to load suggestions:', err))
+        .finally(() => setLoadingSuggestions(false));
+    }
+  }, [position.id, position.status]);
 
   const handleSave = async () => {
     if (!onUpdate) return;
@@ -311,6 +327,57 @@ export default function PositionModal({ position, candidates, onClose, onUpdate,
               </div>
             </Section>
 
+            {/* Suggested Candidates (only for open positions) */}
+            {position.status === 'open' && (
+              <Section title="Suggested Candidates" icon="sparkles">
+                {loadingSuggestions ? (
+                  <div className="text-center py-6 text-gray-500">
+                    <svg className="animate-spin h-5 w-5 mx-auto mb-2 text-purple-500" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Loading suggestions...
+                  </div>
+                ) : suggestions.length === 0 ? (
+                  <div className="text-center py-6 text-gray-400">
+                    No suggestions available
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {suggestions.map((suggestion) => (
+                      <div
+                        key={suggestion.id}
+                        onClick={() => onSelectCandidate?.(suggestion.id)}
+                        className={`flex items-center justify-between p-4 rounded-xl bg-purple-50/50 border border-purple-100 ${
+                          onSelectCandidate ? 'cursor-pointer hover:bg-purple-100/50 hover:border-purple-200 transition-all' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-400 to-purple-500 flex items-center justify-center text-white font-medium text-sm">
+                            {suggestion.name.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{suggestion.name}</p>
+                            <p className="text-sm text-gray-500">{suggestion.email}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-purple-600 font-medium">
+                            {Math.round(suggestion.similarity * 100)}% match
+                          </span>
+                          {onSelectCandidate && (
+                            <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Section>
+            )}
+
             {/* Assigned Candidates */}
             <Section title={`Assigned Candidates (${candidates.length})`} icon="users">
               {candidates.length === 0 ? (
@@ -373,6 +440,9 @@ export default function PositionModal({ position, candidates, onClose, onUpdate,
 }
 
 const ICONS = {
+  sparkles: (
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+  ),
   document: (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
   ),

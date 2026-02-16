@@ -9,7 +9,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed": "tsx src/seed.ts",
-    "ingest": "tsx src/ingestion/index.ts"
+    "ingest": "tsx src/ingestion/index.ts",
+    "backfill-embeddings": "tsx src/embeddings/backfill.ts",
+    "evaluate-embeddings": "tsx src/embeddings/evaluate.ts",
+    "export-embeddings-tsv": "tsx src/embeddings/export-tsv.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.500.0",
