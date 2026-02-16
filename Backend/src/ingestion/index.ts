@@ -86,12 +86,12 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`\n=== Document Ingestion Pipeline ===`);
+  console.log('\n=== Document Ingestion Pipeline ===');
   console.log(`Path: ${options.path}`);
   console.log(`Type: ${options.type}`);
   if (options.limit) console.log(`Limit: ${options.limit} files`);
-  if (options.dryRun) console.log(`Mode: DRY RUN`);
-  console.log('');
+  if (options.dryRun) console.log('Mode: DRY RUN');
+  console.log();
 
   let files: string[];
   try {
@@ -106,10 +106,9 @@ async function main() {
     process.exit(0);
   }
 
-  console.log(`Found ${files.length} files`);
+  console.log(`Found ${files.length} files\n`);
 
   const toProcess = options.limit ? files.slice(0, options.limit) : files;
-  console.log('');
 
   let success = 0;
   let failed = 0;
@@ -125,20 +124,16 @@ async function main() {
     });
 
     if (result.success) {
-      if (result.candidateId) {
-        console.log(`✓ Created: ${result.candidateId}`);
-      } else {
-        console.log(`✓ Success`);
-      }
+      const detail = result.candidateId ? `Created: ${result.candidateId}` : 'Success';
+      console.log(`OK ${detail}`);
       success++;
     } else {
-      console.log(`✗ Failed: ${result.errors?.[0] || 'Unknown error'}`);
+      console.log(`FAILED ${result.errors?.[0] || 'Unknown error'}`);
       failed++;
     }
   }
 
-  console.log('');
-  console.log('=== Summary ===');
+  console.log('\n=== Summary ===');
   console.log(`Total: ${toProcess.length}, Success: ${success}, Failed: ${failed}`);
 
   process.exit(failed > 0 ? 1 : 0);

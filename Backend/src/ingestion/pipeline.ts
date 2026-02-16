@@ -17,6 +17,14 @@ import {
   updatePositionEmbedding,
 } from '../embeddings/search.js';
 
+async function safeUpdateEmbedding(fn: () => Promise<unknown>): Promise<void> {
+  try {
+    await fn();
+  } catch (error) {
+    console.error('Embedding generation failed (non-fatal):', error);
+  }
+}
+
 export interface DocumentInput {
   buffer?: Buffer;
   filePath?: string;
@@ -126,6 +134,7 @@ export async function processDocument(input: DocumentInput): Promise<ExtractionR
       return { success: true, extractionLogId: logId, warnings: ['Dry run - no data persisted'] };
     }
 
+    // Stage 5b: Persist and generate embedding
     if (input.type === 'cv') {
       const fileBuffer = input.buffer || parseResult.buffer;
       const candidateId = await persistCandidate(
@@ -140,31 +149,16 @@ export async function processDocument(input: DocumentInput): Promise<ExtractionR
         candidateId,
         totalDurationMs: Date.now() - startTime,
       });
-
-      // Stage 6: Generate embedding (non-blocking)
-      try {
-        await updateCandidateEmbedding(candidateId);
-      } catch (embErr) {
-        console.error('Embedding generation failed (non-fatal):', embErr);
-      }
-
+      await safeUpdateEmbedding(() => updateCandidateEmbedding(candidateId));
       return { success: true, candidateId, extractionLogId: logId };
     }
 
-    // Job persistence
     const positionId = await persistJob(validation.data as JobExtraction, regexResults, logId);
     await updateExtractionLog(logId, {
       status: 'success',
       totalDurationMs: Date.now() - startTime,
     });
-
-    // Stage 6: Generate embedding (non-blocking)
-    try {
-      await updatePositionEmbedding(positionId);
-    } catch (embErr) {
-      console.error('Embedding generation failed (non-fatal):', embErr);
-    }
-
+    await safeUpdateEmbedding(() => updatePositionEmbedding(positionId));
     return { success: true, positionId, extractionLogId: logId };
 
   } catch (error) {
