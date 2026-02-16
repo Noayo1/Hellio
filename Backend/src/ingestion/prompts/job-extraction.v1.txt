@@ -2,12 +2,12 @@ You are extracting structured data from a job description. Return ONLY valid JSO
 
 Extract:
 - title: Job title (string)
-- company: Company name. Extract from the job posting content, sender's signature, or email domain (e.g., "sarah@acme.com" → "Acme"). Do NOT use the recipient's email domain (e.g., NOT from "hr@hellio.com").
+- company: Company name. Extract from the job posting content, sender's signature, or email domain (e.g., "sarah@acme.com" → "Acme"). Do NOT use the recipient's email domain (e.g., NOT from "hr@hellio.com"). If not specified, use "Unknown".
 - location: Job location (optional)
 - description: Comprehensive description extracted directly from the job posting. Include: the role overview, key responsibilities, team context, company info, and any unique aspects mentioned. Keep all relevant details from the original text (5-10 sentences). Do NOT summarize or shorten - preserve the important information.
 - requirements: Array of {text, required: boolean}
 - skills: Array of skill names
-- experienceYears: Required years (number, optional)
+- experienceYears: Minimum years of experience required as NUMBER (e.g., "5+ years experience" → 5, "3-5 years" → 3). Extract from requirements text.
 - workType: remote/onsite/hybrid (optional)
 - salary: Salary info as text (optional)
 - salaryMin: Minimum salary as NUMBER (e.g., "12,000-15,000 NIS" → 12000). Extract just the number, no commas or currency.
