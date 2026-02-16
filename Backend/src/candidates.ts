@@ -55,25 +55,25 @@ async function getCandidateById(candidateId: string) {
     [candidateId]
   );
 
-  // Get highlights for each experience
-  const experiences = [];
-  for (const exp of experiencesResult.rows) {
-    const highlightsResult = await pool.query(
-      `SELECT highlight FROM experience_highlights
-       WHERE experience_id = $1
-       ORDER BY sort_order`,
-      [exp.id]
-    );
-    experiences.push({
-      title: exp.title,
-      company: exp.company,
-      location: exp.location,
-      startDate: exp.startDate,
-      endDate: exp.endDate,
-      highlights: highlightsResult.rows.map((r) => r.highlight),
-    });
-  }
-  candidate.experience = experiences;
+  // Get highlights for each experience in parallel
+  candidate.experience = await Promise.all(
+    experiencesResult.rows.map(async (exp) => {
+      const highlightsResult = await pool.query(
+        `SELECT highlight FROM experience_highlights
+         WHERE experience_id = $1
+         ORDER BY sort_order`,
+        [exp.id]
+      );
+      return {
+        title: exp.title,
+        company: exp.company,
+        location: exp.location,
+        startDate: exp.startDate,
+        endDate: exp.endDate,
+        highlights: highlightsResult.rows.map((r) => r.highlight),
+      };
+    })
+  );
 
   // Get education
   const educationResult = await pool.query(
@@ -110,18 +110,11 @@ async function getCandidateById(candidateId: string) {
 
 // Helper function to get all candidates
 async function getAllCandidates() {
-  // Get all candidate IDs
   const idsResult = await pool.query(`SELECT id FROM candidates ORDER BY name`);
-  const candidates = [];
-
-  for (const row of idsResult.rows) {
-    const candidate = await getCandidateById(row.id);
-    if (candidate) {
-      candidates.push(candidate);
-    }
-  }
-
-  return candidates;
+  const candidates = await Promise.all(
+    idsResult.rows.map((row) => getCandidateById(row.id))
+  );
+  return candidates.filter((c) => c !== null);
 }
 
 // GET /api/candidates

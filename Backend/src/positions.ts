@@ -64,16 +64,10 @@ async function getPositionById(positionId: string) {
 // Helper function to get all positions
 async function getAllPositions() {
   const idsResult = await pool.query(`SELECT id FROM positions ORDER BY title`);
-  const positions = [];
-
-  for (const row of idsResult.rows) {
-    const position = await getPositionById(row.id);
-    if (position) {
-      positions.push(position);
-    }
-  }
-
-  return positions;
+  const positions = await Promise.all(
+    idsResult.rows.map((row) => getPositionById(row.id))
+  );
+  return positions.filter((p) => p !== null);
 }
 
 // GET /api/positions
@@ -142,25 +136,28 @@ router.put('/:id', requireAdmin, async (req: AuthRequest, res: Response) => {
 
     // Update skills: delete existing, insert new
     await pool.query('DELETE FROM position_skills WHERE position_id = $1', [id]);
-    for (const skillName of skills) {
-      const skillId = await getOrCreateSkill(skillName);
-      await pool.query(
-        `INSERT INTO position_skills (position_id, skill_id) VALUES ($1, $2)
-         ON CONFLICT DO NOTHING`,
-        [id, skillId]
-      );
-    }
+    await Promise.all(
+      skills.map(async (skillName: string) => {
+        const skillId = await getOrCreateSkill(skillName);
+        await pool.query(
+          `INSERT INTO position_skills (position_id, skill_id) VALUES ($1, $2)
+           ON CONFLICT DO NOTHING`,
+          [id, skillId]
+        );
+      })
+    );
 
     // Update requirements: delete existing, insert new
     await pool.query('DELETE FROM position_requirements WHERE position_id = $1', [id]);
-    for (let i = 0; i < requirements.length; i++) {
-      const req = requirements[i];
-      await pool.query(
-        `INSERT INTO position_requirements (position_id, text, required, sort_order)
-         VALUES ($1, $2, $3, $4)`,
-        [id, req.text, req.required, i]
-      );
-    }
+    await Promise.all(
+      requirements.map((req: { text: string; required: boolean }, i: number) =>
+        pool.query(
+          `INSERT INTO position_requirements (position_id, text, required, sort_order)
+           VALUES ($1, $2, $3, $4)`,
+          [id, req.text, req.required, i]
+        )
+      )
+    );
 
     // Return updated position
     const updatedPosition = await getPositionById(id);
