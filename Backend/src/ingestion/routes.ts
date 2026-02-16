@@ -4,11 +4,21 @@
 
 import { Router, Response } from 'express';
 import multer from 'multer';
+
+import pool from '../db.js';
 import { authMiddleware, requireAdmin, AuthRequest } from '../middleware.js';
 import { processDocument } from './pipeline.js';
-import pool from '../db.js';
 
 const router = Router();
+
+function tryParseJson(value: unknown): unknown {
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -48,21 +58,8 @@ router.post(
         dryRun,
       });
 
-      if (result.success) {
-        res.json({
-          success: true,
-          candidateId: result.candidateId,
-          positionId: result.positionId,
-          extractionLogId: result.extractionLogId,
-          warnings: result.warnings,
-        });
-      } else {
-        res.status(422).json({
-          success: false,
-          errors: result.errors,
-          extractionLogId: result.extractionLogId,
-        });
-      }
+      const status = result.success ? 200 : 422;
+      res.status(status).json(result);
     } catch (error) {
       console.error('Ingestion upload error:', error);
       res.status(500).json({ error: 'Internal server error' });
@@ -78,35 +75,28 @@ router.get('/logs', async (req: AuthRequest, res: Response) => {
   const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
   const offset = parseInt(req.query.offset as string) || 0;
 
+  const whereClause = status ? 'WHERE status = $1' : '';
+  const filterValues = status ? [status] : [];
+
   try {
-    let query = `
+    const logsQuery = `
       SELECT id, source_file_path, source_type, status, error_message,
              parse_duration_ms, llm_duration_ms, total_duration_ms, created_at,
              candidate_id
       FROM extraction_logs
+      ${whereClause}
+      ORDER BY created_at DESC
+      LIMIT $${filterValues.length + 1} OFFSET $${filterValues.length + 2}
     `;
-    const values: unknown[] = [];
+    const countQuery = `SELECT COUNT(*) FROM extraction_logs ${whereClause}`;
 
-    if (status) {
-      query += ` WHERE status = $1`;
-      values.push(status);
-    }
-
-    query += ` ORDER BY created_at DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
-    values.push(limit, offset);
-
-    const result = await pool.query(query, values);
-
-    let countQuery = `SELECT COUNT(*) FROM extraction_logs`;
-    const countValues: unknown[] = [];
-    if (status) {
-      countQuery += ` WHERE status = $1`;
-      countValues.push(status);
-    }
-    const countResult = await pool.query(countQuery, countValues);
+    const [logsResult, countResult] = await Promise.all([
+      pool.query(logsQuery, [...filterValues, limit, offset]),
+      pool.query(countQuery, filterValues),
+    ]);
 
     res.json({
-      logs: result.rows,
+      logs: logsResult.rows,
       total: parseInt(countResult.rows[0].count),
       limit,
       offset,
@@ -135,17 +125,9 @@ router.get('/logs/:id', async (req: AuthRequest, res: Response) => {
     }
 
     const log = result.rows[0];
-
-    // Parse JSON fields stored as TEXT
-    if (log.regex_results) {
-      try { log.regex_results = JSON.parse(log.regex_results); } catch { /* keep as string */ }
-    }
-    if (log.llm_parsed_data) {
-      try { log.llm_parsed_data = JSON.parse(log.llm_parsed_data); } catch { /* keep as string */ }
-    }
-    if (log.validation_errors) {
-      try { log.validation_errors = JSON.parse(log.validation_errors); } catch { /* keep as string */ }
-    }
+    log.regex_results = tryParseJson(log.regex_results);
+    log.llm_parsed_data = tryParseJson(log.llm_parsed_data);
+    log.validation_errors = tryParseJson(log.validation_errors);
 
     res.json(log);
   } catch (error) {
