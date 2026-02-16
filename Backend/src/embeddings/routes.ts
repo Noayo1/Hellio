@@ -55,10 +55,66 @@ router.get(
 );
 
 /**
+ * Get or generate explanation for a candidate-position pair.
+ * Uses cache to avoid regenerating explanations.
+ */
+async function getOrCreateExplanation(
+  candidateId: string,
+  positionId: string,
+  candidateText: string,
+  similarity: number
+): Promise<string | null> {
+  // Check cache first
+  const cached = await pool.query(
+    'SELECT explanation FROM explanation_cache WHERE candidate_id = $1 AND position_id = $2',
+    [candidateId, positionId]
+  );
+
+  if (cached.rows.length > 0) {
+    return cached.rows[0].explanation;
+  }
+
+  // Fetch position text
+  const positionQuery = await pool.query(
+    'SELECT embedding_text FROM positions WHERE id = $1',
+    [positionId]
+  );
+  const positionText = positionQuery.rows[0]?.embedding_text || '';
+
+  const prompt = `Given this candidate profile:
+${candidateText}
+
+And this job position:
+${positionText}
+
+In 1-2 sentences, explain why this position might be a good fit for this candidate. Focus on specific skill matches and experience alignment. Be concise and specific.`;
+
+  try {
+    const response = await invokeNova(prompt);
+    const explanation = response.text.trim();
+
+    // Log LLM usage for cost tracking
+    await logLlmUsage('explanation', 'position', positionId, response);
+
+    // Store in cache
+    await pool.query(
+      `INSERT INTO explanation_cache (candidate_id, position_id, explanation, similarity)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (candidate_id, position_id) DO UPDATE SET explanation = $3, similarity = $4`,
+      [candidateId, positionId, explanation, similarity]
+    );
+
+    return explanation;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * GET /api/candidates/:id/suggest-positions
  * Returns up to 3 relevant positions for a candidate.
- * Includes LLM-generated explanations when explain=true.
- * Only returns positions with similarity >= 60%.
+ * Includes LLM-generated explanations when explain=true (cached for consistency).
+ * Only returns positions with similarity >= 60% and matching experience level.
  */
 router.get(
   '/candidates/:id/suggest-positions',
@@ -68,7 +124,8 @@ router.get(
     const includeExplanation = req.query.explain === 'true';
 
     try {
-      const suggestions = await findSimilarPositions(id, limit, 0.6);
+      // Experience filtering is enabled by default
+      const suggestions = await findSimilarPositions(id, limit, 0.5, true);
 
       // If no relevant positions found
       if (suggestions.length === 0) {
@@ -78,7 +135,7 @@ router.get(
         });
       }
 
-      // Generate LLM explanations if requested
+      // Get or generate explanations if requested
       if (includeExplanation && suggestions.length > 0) {
         // Fetch candidate embedding text for context
         const candidateQuery = await pool.query(
@@ -89,31 +146,10 @@ router.get(
         if (candidateQuery.rows.length > 0) {
           const candidate = candidateQuery.rows[0];
 
-          // Generate explanations in parallel
-          const explanationPromises = suggestions.map(async (pos) => {
-            const positionQuery = await pool.query(
-              'SELECT embedding_text FROM positions WHERE id = $1',
-              [pos.id]
-            );
-            const positionText = positionQuery.rows[0]?.embedding_text || '';
-
-            const prompt = `Given this candidate profile:
-${candidate.embedding_text}
-
-And this job position:
-${positionText}
-
-In 1-2 sentences, explain why this position might be a good fit for this candidate. Focus on specific skill matches and experience alignment. Be concise and specific.`;
-
-            try {
-              const response = await invokeNova(prompt);
-              // Log LLM usage for cost tracking
-              await logLlmUsage('explanation', 'position', pos.id, response);
-              return response.text.trim();
-            } catch {
-              return null;
-            }
-          });
+          // Get explanations in parallel (uses cache when available)
+          const explanationPromises = suggestions.map((pos) =>
+            getOrCreateExplanation(id, pos.id, candidate.embedding_text, pos.similarity)
+          );
 
           const explanations = await Promise.all(explanationPromises);
           suggestions.forEach((pos, idx) => {

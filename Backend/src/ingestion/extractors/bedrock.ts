@@ -54,7 +54,7 @@ export async function invokeNova(
         anthropic_version: 'bedrock-2023-05-31',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 4096,
-        temperature: 0.1,
+        temperature: 0,
       };
     } else {
       // Nova format
@@ -67,7 +67,7 @@ export async function invokeNova(
         ],
         inferenceConfig: {
           maxTokens: 4096,
-          temperature: 0.1,
+          temperature: 0,
         },
       };
     }

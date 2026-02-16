@@ -24,6 +24,37 @@ export interface SimilarPosition {
   explanation?: string;
 }
 
+/** Database row types for type safety */
+interface CandidateEmbeddingRow {
+  embedding: string;
+  years_of_experience: string | number | null;
+}
+
+interface PositionSimilarityRow {
+  id: string;
+  title: string;
+  company: string;
+  experience_years: number | null;
+  similarity: string | number;
+}
+
+interface CandidateSimilarityRow {
+  id: string;
+  name: string;
+  email: string;
+  similarity: string | number;
+}
+
+/**
+ * Safely parse a database value to number.
+ * Handles string, number, null, and undefined.
+ */
+function toNumber(value: string | number | null | undefined, defaultValue = 0): number {
+  if (value === null || value === undefined) return defaultValue;
+  const parsed = typeof value === 'number' ? value : parseFloat(value);
+  return isNaN(parsed) ? defaultValue : parsed;
+}
+
 /**
  * Find top N candidates similar to a position.
  * Excludes already-assigned candidates.
@@ -31,7 +62,7 @@ export interface SimilarPosition {
 export async function findSimilarCandidates(
   positionId: string,
   limit: number = 3,
-  minSimilarity: number = 0.6
+  minSimilarity: number = 0.5
 ): Promise<SimilarCandidate[]> {
   // Get position embedding
   const positionResult = await pool.query(
@@ -46,7 +77,7 @@ export async function findSimilarCandidates(
   const embedding = positionResult.rows[0].embedding;
 
   // Find similar candidates, excluding already assigned
-  const result = await pool.query(
+  const result = await pool.query<CandidateSimilarityRow>(
     `SELECT
       c.id,
       c.name,
@@ -68,56 +99,74 @@ export async function findSimilarCandidates(
     id: row.id,
     name: row.name,
     email: row.email,
-    similarity: parseFloat(parseFloat(row.similarity).toFixed(3)),
+    similarity: parseFloat(toNumber(row.similarity).toFixed(3)),
   }));
 }
 
 /**
  * Find top N positions similar to a candidate.
  * Only returns open positions with reasonable similarity.
+ * Experience matching: allows 1 year flexibility but penalizes under-qualified matches.
  */
 export async function findSimilarPositions(
   candidateId: string,
   limit: number = 3,
-  minSimilarity: number = 0.6
+  minSimilarity: number = 0.5,
+  filterByExperience: boolean = true
 ): Promise<SimilarPosition[]> {
-  // Get candidate embedding
-  const candidateResult = await pool.query(
-    'SELECT embedding FROM candidates WHERE id = $1 AND embedding IS NOT NULL',
+  const TOLERANCE = 1; // Allow positions requiring up to 1 year more than candidate has
+  const PENALTY_PER_YEAR = 0.05; // 5% penalty per year short
+
+  const candidateResult = await pool.query<CandidateEmbeddingRow>(
+    'SELECT embedding, years_of_experience FROM candidates WHERE id = $1 AND embedding IS NOT NULL',
     [candidateId]
   );
 
-  if (
-    candidateResult.rows.length === 0 ||
-    !candidateResult.rows[0].embedding
-  ) {
+  if (!candidateResult.rows.length || !candidateResult.rows[0].embedding) {
     return [];
   }
 
-  const embedding = candidateResult.rows[0].embedding;
+  const { embedding, years_of_experience } = candidateResult.rows[0];
+  const candidateYears = toNumber(years_of_experience);
+  const maxAllowed = Math.floor(candidateYears + TOLERANCE); // Floor to match integer column
 
-  // Find similar open positions
-  const result = await pool.query(
-    `SELECT
-      p.id,
-      p.title,
-      p.company,
-      1 - (p.embedding <=> $1::vector) as similarity
-    FROM positions p
-    WHERE p.embedding IS NOT NULL
-      AND p.status = 'open'
-      AND 1 - (p.embedding <=> $1::vector) >= $2
-    ORDER BY p.embedding <=> $1::vector
-    LIMIT $3`,
-    [embedding, minSimilarity, limit]
+  const experienceCondition = filterByExperience
+    ? 'AND (p.experience_years IS NULL OR p.experience_years <= $4)'
+    : '';
+
+  const queryParams = filterByExperience
+    ? [embedding, minSimilarity, limit * 2, maxAllowed]
+    : [embedding, minSimilarity, limit];
+
+  const result = await pool.query<PositionSimilarityRow>(
+    `SELECT p.id, p.title, p.company, p.experience_years,
+            1 - (p.embedding <=> $1::vector) as similarity
+     FROM positions p
+     WHERE p.embedding IS NOT NULL
+       AND p.status = 'open'
+       AND 1 - (p.embedding <=> $1::vector) >= $2
+       ${experienceCondition}
+     ORDER BY p.embedding <=> $1::vector
+     LIMIT $3`,
+    queryParams
   );
 
-  return result.rows.map((row) => ({
-    id: row.id,
-    title: row.title,
-    company: row.company,
-    similarity: parseFloat(parseFloat(row.similarity).toFixed(3)),
-  }));
+  // Apply penalty for under-qualified matches and re-rank
+  return result.rows
+    .map((row) => {
+      const base = toNumber(row.similarity);
+      const gap = Math.max(0, toNumber(row.experience_years) - candidateYears);
+      const adjusted = base - gap * PENALTY_PER_YEAR;
+      return {
+        id: row.id,
+        title: row.title,
+        company: row.company,
+        similarity: parseFloat(Math.max(0, adjusted).toFixed(3)),
+      };
+    })
+    .filter((r) => r.similarity >= minSimilarity)
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, limit);
 }
 
 /**
@@ -215,6 +264,12 @@ export async function updateCandidateEmbedding(
     [`[${result.embedding.join(',')}]`, embeddingText, candidateId]
   );
 
+  // Invalidate cached explanations (embedding changed, explanations are stale)
+  await pool.query(
+    'DELETE FROM explanation_cache WHERE candidate_id = $1',
+    [candidateId]
+  );
+
   // Log embedding creation
   await pool.query(
     `INSERT INTO embedding_logs (entity_type, entity_id, embedding_text, embedding_model, dimension, duration_ms)
@@ -287,6 +342,12 @@ export async function updatePositionEmbedding(
          embedding_created_at = NOW()
      WHERE id = $3`,
     [`[${result.embedding.join(',')}]`, embeddingText, positionId]
+  );
+
+  // Invalidate cached explanations (embedding changed, explanations are stale)
+  await pool.query(
+    'DELETE FROM explanation_cache WHERE position_id = $1',
+    [positionId]
   );
 
   // Log embedding creation

@@ -23,27 +23,86 @@ function toDate(dateStr: string | null | undefined): string | null {
 }
 
 /**
+ * Parse a date string (YYYY, YYYY-MM, or "Present") to a Date object.
+ * Returns current date for "Present" or null-ish values.
+ */
+function parseDateToMonth(dateStr: string | null | undefined): Date {
+  if (!dateStr || dateStr.toLowerCase() === 'present') {
+    return new Date();
+  }
+  // Handle YYYY-MM format
+  if (dateStr.includes('-')) {
+    const [year, month] = dateStr.split('-').map(Number);
+    return new Date(year, (month || 1) - 1);
+  }
+  // Handle YYYY format (assume January)
+  const year = parseInt(dateStr);
+  if (!isNaN(year)) {
+    return new Date(year, 0);
+  }
+  return new Date();
+}
+
+/**
+ * Calculate years of experience from the most recent position.
+ * Uses only the first experience (sort_order = 0) which is the current/most recent role.
+ * Calculates based on years only (no months/days).
+ */
+async function calculateYearsFromExperiences(candidateId: string): Promise<number | null> {
+  // Get only the most recent position (sort_order = 0)
+  const result = await pool.query(
+    'SELECT start_date, end_date FROM experiences WHERE candidate_id = $1 ORDER BY sort_order LIMIT 1',
+    [candidateId]
+  );
+
+  if (result.rows.length === 0 || !result.rows[0].start_date) return null;
+
+  const { start_date, end_date } = result.rows[0];
+
+  // Extract start year
+  const startYear = parseInt(start_date.substring(0, 4));
+  if (isNaN(startYear)) return null;
+
+  // Extract end year (use current year for "Present" or null)
+  let endYear: number;
+  if (!end_date || end_date.toLowerCase() === 'present') {
+    endYear = new Date().getFullYear();
+  } else {
+    endYear = parseInt(end_date.substring(0, 4));
+    if (isNaN(endYear)) return null;
+  }
+
+  // Simple year subtraction
+  const years = endYear - startYear;
+  return Math.max(0, years);
+}
+
+/**
  * Get or create a skill by name.
+ * Truncates to 100 chars to fit VARCHAR(100) column.
  */
 async function getOrCreateSkill(skillName: string): Promise<number> {
+  const truncatedName = skillName.slice(0, 100);
   const result = await pool.query(
     `INSERT INTO skills (name) VALUES ($1)
      ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
      RETURNING id`,
-    [skillName]
+    [truncatedName]
   );
   return result.rows[0].id;
 }
 
 /**
  * Get or create a language by name.
+ * Truncates to 50 chars to fit VARCHAR(50) column.
  */
 async function getOrCreateLanguage(languageName: string): Promise<number> {
+  const truncatedName = languageName.slice(0, 50);
   const result = await pool.query(
     `INSERT INTO languages (name) VALUES ($1)
      ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
      RETURNING id`,
-    [languageName]
+    [truncatedName]
   );
   return result.rows[0].id;
 }
@@ -316,6 +375,17 @@ export async function persistCandidate(
 
   // Insert related data (skills, experience, education, etc.)
   await insertCandidateRelatedData(candidateId, data);
+
+  // Calculate years_of_experience from work history if not provided by LLM
+  if (!data.yearsOfExperience) {
+    const calculatedYears = await calculateYearsFromExperiences(candidateId);
+    if (calculatedYears !== null) {
+      await pool.query(
+        'UPDATE candidates SET years_of_experience = $1 WHERE id = $2',
+        [calculatedYears, candidateId]
+      );
+    }
+  }
 
   // Handle file upload with versioning
   if (fileBuffer && fileName) {
