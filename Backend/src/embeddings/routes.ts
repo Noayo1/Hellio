@@ -110,4 +110,95 @@ In 1-2 sentences, explain why this position might be a good fit for this candida
   }
 );
 
+/**
+ * GET /api/stats/embedding-costs
+ * Returns embedding usage statistics and estimated costs.
+ */
+router.get('/stats/embedding-costs', async (_req: AuthRequest, res: Response) => {
+  try {
+    // Get embedding statistics from logs
+    const logsQuery = await pool.query(`
+      SELECT
+        entity_type,
+        COUNT(*) as count,
+        SUM(LENGTH(embedding_text)) as total_chars,
+        AVG(duration_ms) as avg_duration_ms
+      FROM embedding_logs
+      GROUP BY entity_type
+    `);
+
+    // Get counts of entities with embeddings
+    const candidatesWithEmbeddings = await pool.query(
+      'SELECT COUNT(*) FROM candidates WHERE embedding IS NOT NULL'
+    );
+    const positionsWithEmbeddings = await pool.query(
+      'SELECT COUNT(*) FROM positions WHERE embedding IS NOT NULL'
+    );
+
+    // Calculate costs
+    // AWS Titan: ~$0.00002 per 1,000 input tokens
+    // Approximate: 4 characters per token
+    const COST_PER_1K_TOKENS = 0.00002;
+    const CHARS_PER_TOKEN = 4;
+
+    let totalCandidateChars = 0;
+    let totalPositionChars = 0;
+    let candidateCount = 0;
+    let positionCount = 0;
+
+    for (const row of logsQuery.rows) {
+      if (row.entity_type === 'candidate') {
+        totalCandidateChars = parseInt(row.total_chars) || 0;
+        candidateCount = parseInt(row.count) || 0;
+      } else if (row.entity_type === 'position') {
+        totalPositionChars = parseInt(row.total_chars) || 0;
+        positionCount = parseInt(row.count) || 0;
+      }
+    }
+
+    const totalChars = totalCandidateChars + totalPositionChars;
+    const estimatedTokens = Math.ceil(totalChars / CHARS_PER_TOKEN);
+    const embeddingCost = (estimatedTokens / 1000) * COST_PER_1K_TOKENS;
+
+    // Estimate LLM explanation costs (Nova Lite: ~$0.001 per explanation)
+    // We don't track this yet, but we can estimate based on position suggestions viewed
+    const LLM_COST_PER_EXPLANATION = 0.001;
+
+    res.json({
+      embeddings: {
+        candidates: parseInt(candidatesWithEmbeddings.rows[0].count),
+        positions: parseInt(positionsWithEmbeddings.rows[0].count),
+        totalGenerated: candidateCount + positionCount,
+      },
+      usage: {
+        totalCharacters: totalChars,
+        estimatedTokens,
+        avgCandidateChars: candidateCount > 0 ? Math.round(totalCandidateChars / candidateCount) : 0,
+        avgPositionChars: positionCount > 0 ? Math.round(totalPositionChars / positionCount) : 0,
+      },
+      costs: {
+        embeddingCost: parseFloat(embeddingCost.toFixed(6)),
+        embeddingCostFormatted: `$${embeddingCost.toFixed(6)}`,
+        perCandidateAvg: candidateCount > 0
+          ? parseFloat(((totalCandidateChars / CHARS_PER_TOKEN / 1000 * COST_PER_1K_TOKENS) / candidateCount).toFixed(8))
+          : 0,
+        perPositionAvg: positionCount > 0
+          ? parseFloat(((totalPositionChars / CHARS_PER_TOKEN / 1000 * COST_PER_1K_TOKENS) / positionCount).toFixed(8))
+          : 0,
+        llmExplanationCost: LLM_COST_PER_EXPLANATION,
+        note: 'Costs are estimates based on AWS Titan embed-text-v2 pricing (~$0.00002/1K tokens)',
+      },
+      pricing: {
+        embeddingModel: 'amazon.titan-embed-text-v2:0',
+        embeddingPricePerKTokens: COST_PER_1K_TOKENS,
+        llmModel: 'amazon.nova-lite-v1:0',
+        llmPricePerExplanation: LLM_COST_PER_EXPLANATION,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching embedding costs:', error);
+    res.status(500).json({ error: 'Failed to fetch costs' });
+  }
+});
+
 export default router;

@@ -15,17 +15,42 @@ interface DashboardStats {
   recentPositions: Position[];
 }
 
+interface EmbeddingCosts {
+  embeddings: {
+    candidates: number;
+    positions: number;
+    totalGenerated: number;
+  };
+  usage: {
+    totalCharacters: number;
+    estimatedTokens: number;
+  };
+  costs: {
+    embeddingCost: number;
+    embeddingCostFormatted: string;
+    perCandidateAvg: number;
+    perPositionAvg: number;
+    llmExplanationCost: number;
+  };
+  pricing: {
+    embeddingModel: string;
+    llmModel: string;
+  };
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [embeddingCosts, setEmbeddingCosts] = useState<EmbeddingCosts | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchStats() {
       try {
-        const [candidates, positions] = await Promise.all([
+        const [candidates, positions, costs] = await Promise.all([
           api.getCandidates() as Promise<Candidate[]>,
           api.getPositions() as Promise<Position[]>,
+          api.getEmbeddingCosts().catch(() => null),
         ]);
 
         setStats({
@@ -39,6 +64,7 @@ export default function DashboardPage() {
           recentCandidates: candidates.slice(0, 5),
           recentPositions: positions.slice(0, 5),
         });
+        setEmbeddingCosts(costs);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load dashboard');
       } finally {
@@ -268,6 +294,42 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* AI Costs Card */}
+      {embeddingCosts && (
+        <div className="mt-8 bg-white rounded-2xl shadow-sm border border-gray-200 p-5 flex flex-wrap items-center gap-6">
+          {/* Embedding Cost */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+              <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Titan Embeddings</p>
+              <p className="text-lg font-bold text-gray-900">{embeddingCosts.costs.embeddingCostFormatted}</p>
+            </div>
+            <div className="text-xs text-gray-400 pl-2">
+              {embeddingCosts.usage.estimatedTokens.toLocaleString()} tokens
+            </div>
+          </div>
+
+          <div className="h-8 w-px bg-gray-200" />
+
+          {/* LLM Cost */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+              <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Nova LLM</p>
+              <p className="text-lg font-bold text-gray-900">~${embeddingCosts.costs.llmExplanationCost}/explanation</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

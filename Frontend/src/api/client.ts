@@ -200,6 +200,37 @@ class ApiClient {
     return this.request(`/candidates/${candidateId}/suggest-positions${params}`);
   }
 
+  // Embedding costs
+  async getEmbeddingCosts(): Promise<{
+    embeddings: {
+      candidates: number;
+      positions: number;
+      totalGenerated: number;
+    };
+    usage: {
+      totalCharacters: number;
+      estimatedTokens: number;
+      avgCandidateChars: number;
+      avgPositionChars: number;
+    };
+    costs: {
+      embeddingCost: number;
+      embeddingCostFormatted: string;
+      perCandidateAvg: number;
+      perPositionAvg: number;
+      llmExplanationCost: number;
+      note: string;
+    };
+    pricing: {
+      embeddingModel: string;
+      embeddingPricePerKTokens: number;
+      llmModel: string;
+      llmPricePerExplanation: number;
+    };
+  }> {
+    return this.request('/stats/embedding-costs');
+  }
+
   // Chat
   async sendChatMessage(
     question: string,
