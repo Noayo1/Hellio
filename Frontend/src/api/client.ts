@@ -213,19 +213,26 @@ class ApiClient {
       avgCandidateChars: number;
       avgPositionChars: number;
     };
+    llmUsage: {
+      totalCalls: number;
+      inputTokens: number;
+      outputTokens: number;
+      totalTokens: number;
+    };
     costs: {
       embeddingCost: number;
       embeddingCostFormatted: string;
       perCandidateAvg: number;
       perPositionAvg: number;
-      llmExplanationCost: number;
-      note: string;
+      llmCost: number;
+      llmCostFormatted: string;
     };
     pricing: {
       embeddingModel: string;
       embeddingPricePerKTokens: number;
       llmModel: string;
-      llmPricePerExplanation: number;
+      llmInputPricePerKTokens: number;
+      llmOutputPricePerKTokens: number;
     };
   }> {
     return this.request('/stats/embedding-costs');

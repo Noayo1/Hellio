@@ -25,6 +25,9 @@ function getClient(): BedrockRuntimeClient {
 export interface BedrockResponse {
   text: string;
   durationMs: number;
+  inputTokens: number;
+  outputTokens: number;
+  modelId: string;
   error?: string;
 }
 
@@ -79,25 +82,38 @@ export async function invokeNova(
     const response = await client.send(command);
     const responseBody = JSON.parse(new TextDecoder().decode(response.body));
 
-    // Extract text based on model response format
+    // Extract text and token usage based on model response format
     let text: string;
+    let inputTokens = 0;
+    let outputTokens = 0;
+
     if (isClaudeModel) {
       // Claude response format
       text = responseBody.content?.[0]?.text || '';
+      inputTokens = responseBody.usage?.input_tokens || 0;
+      outputTokens = responseBody.usage?.output_tokens || 0;
     } else {
       // Nova response format
       text = responseBody.output?.message?.content?.[0]?.text || '';
+      inputTokens = responseBody.usage?.inputTokens || 0;
+      outputTokens = responseBody.usage?.outputTokens || 0;
     }
 
     return {
       text,
       durationMs: Date.now() - startTime,
+      inputTokens,
+      outputTokens,
+      modelId: actualModelId,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown Bedrock error';
     return {
       text: '',
       durationMs: Date.now() - startTime,
+      inputTokens: 0,
+      outputTokens: 0,
+      modelId: actualModelId,
       error: message,
     };
   }

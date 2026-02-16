@@ -6,7 +6,27 @@ import { Router, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware.js';
 import pool from '../db.js';
 import { findSimilarCandidates, findSimilarPositions } from './search.js';
-import { invokeNova } from '../ingestion/extractors/bedrock.js';
+import { invokeNova, BedrockResponse } from '../ingestion/extractors/bedrock.js';
+
+/**
+ * Log LLM usage to the database for cost tracking.
+ */
+async function logLlmUsage(
+  purpose: string,
+  entityType: string,
+  entityId: string,
+  response: BedrockResponse
+): Promise<void> {
+  try {
+    await pool.query(
+      `INSERT INTO llm_logs (purpose, entity_type, entity_id, model_id, input_tokens, output_tokens, duration_ms)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [purpose, entityType, entityId, response.modelId, response.inputTokens, response.outputTokens, response.durationMs]
+    );
+  } catch (error) {
+    console.error('Failed to log LLM usage:', error);
+  }
+}
 
 const router = Router();
 
@@ -87,6 +107,8 @@ In 1-2 sentences, explain why this position might be a good fit for this candida
 
             try {
               const response = await invokeNova(prompt);
+              // Log LLM usage for cost tracking
+              await logLlmUsage('explanation', 'position', pos.id, response);
               return response.text.trim();
             } catch {
               return null;
@@ -135,11 +157,25 @@ router.get('/stats/embedding-costs', async (_req: AuthRequest, res: Response) =>
       'SELECT COUNT(*) FROM positions WHERE embedding IS NOT NULL'
     );
 
-    // Calculate costs
+    // Get LLM usage statistics from logs
+    const llmLogsQuery = await pool.query(`
+      SELECT
+        COUNT(*) as total_calls,
+        SUM(input_tokens) as total_input_tokens,
+        SUM(output_tokens) as total_output_tokens
+      FROM llm_logs
+      WHERE purpose = 'explanation'
+    `);
+
+    // Calculate embedding costs
     // AWS Titan: ~$0.00002 per 1,000 input tokens
     // Approximate: 4 characters per token
-    const COST_PER_1K_TOKENS = 0.00002;
+    const EMBEDDING_COST_PER_1K_TOKENS = 0.00002;
     const CHARS_PER_TOKEN = 4;
+
+    // Nova Lite pricing (per 1K tokens)
+    const LLM_INPUT_COST_PER_1K = 0.00006;  // $0.06 per 1M input tokens
+    const LLM_OUTPUT_COST_PER_1K = 0.00024; // $0.24 per 1M output tokens
 
     let totalCandidateChars = 0;
     let totalPositionChars = 0;
@@ -157,12 +193,17 @@ router.get('/stats/embedding-costs', async (_req: AuthRequest, res: Response) =>
     }
 
     const totalChars = totalCandidateChars + totalPositionChars;
-    const estimatedTokens = Math.ceil(totalChars / CHARS_PER_TOKEN);
-    const embeddingCost = (estimatedTokens / 1000) * COST_PER_1K_TOKENS;
+    const estimatedEmbeddingTokens = Math.ceil(totalChars / CHARS_PER_TOKEN);
+    const embeddingCost = (estimatedEmbeddingTokens / 1000) * EMBEDDING_COST_PER_1K_TOKENS;
 
-    // Estimate LLM explanation costs (Nova Lite: ~$0.001 per explanation)
-    // We don't track this yet, but we can estimate based on position suggestions viewed
-    const LLM_COST_PER_EXPLANATION = 0.001;
+    // Calculate actual LLM costs from logs
+    const llmStats = llmLogsQuery.rows[0];
+    const llmCalls = parseInt(llmStats?.total_calls) || 0;
+    const llmInputTokens = parseInt(llmStats?.total_input_tokens) || 0;
+    const llmOutputTokens = parseInt(llmStats?.total_output_tokens) || 0;
+    const llmTotalTokens = llmInputTokens + llmOutputTokens;
+    const llmCost = (llmInputTokens / 1000) * LLM_INPUT_COST_PER_1K +
+                    (llmOutputTokens / 1000) * LLM_OUTPUT_COST_PER_1K;
 
     res.json({
       embeddings: {
@@ -172,27 +213,34 @@ router.get('/stats/embedding-costs', async (_req: AuthRequest, res: Response) =>
       },
       usage: {
         totalCharacters: totalChars,
-        estimatedTokens,
+        estimatedTokens: estimatedEmbeddingTokens,
         avgCandidateChars: candidateCount > 0 ? Math.round(totalCandidateChars / candidateCount) : 0,
         avgPositionChars: positionCount > 0 ? Math.round(totalPositionChars / positionCount) : 0,
+      },
+      llmUsage: {
+        totalCalls: llmCalls,
+        inputTokens: llmInputTokens,
+        outputTokens: llmOutputTokens,
+        totalTokens: llmTotalTokens,
       },
       costs: {
         embeddingCost: parseFloat(embeddingCost.toFixed(6)),
         embeddingCostFormatted: `$${embeddingCost.toFixed(6)}`,
         perCandidateAvg: candidateCount > 0
-          ? parseFloat(((totalCandidateChars / CHARS_PER_TOKEN / 1000 * COST_PER_1K_TOKENS) / candidateCount).toFixed(8))
+          ? parseFloat(((totalCandidateChars / CHARS_PER_TOKEN / 1000 * EMBEDDING_COST_PER_1K_TOKENS) / candidateCount).toFixed(8))
           : 0,
         perPositionAvg: positionCount > 0
-          ? parseFloat(((totalPositionChars / CHARS_PER_TOKEN / 1000 * COST_PER_1K_TOKENS) / positionCount).toFixed(8))
+          ? parseFloat(((totalPositionChars / CHARS_PER_TOKEN / 1000 * EMBEDDING_COST_PER_1K_TOKENS) / positionCount).toFixed(8))
           : 0,
-        llmExplanationCost: LLM_COST_PER_EXPLANATION,
-        note: 'Costs are estimates based on AWS Titan embed-text-v2 pricing (~$0.00002/1K tokens)',
+        llmCost: parseFloat(llmCost.toFixed(6)),
+        llmCostFormatted: `$${llmCost.toFixed(6)}`,
       },
       pricing: {
         embeddingModel: 'amazon.titan-embed-text-v2:0',
-        embeddingPricePerKTokens: COST_PER_1K_TOKENS,
+        embeddingPricePerKTokens: EMBEDDING_COST_PER_1K_TOKENS,
         llmModel: 'amazon.nova-lite-v1:0',
-        llmPricePerExplanation: LLM_COST_PER_EXPLANATION,
+        llmInputPricePerKTokens: LLM_INPUT_COST_PER_1K,
+        llmOutputPricePerKTokens: LLM_OUTPUT_COST_PER_1K,
       },
     });
   } catch (error) {

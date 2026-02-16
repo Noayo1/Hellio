@@ -25,12 +25,19 @@ interface EmbeddingCosts {
     totalCharacters: number;
     estimatedTokens: number;
   };
+  llmUsage: {
+    totalCalls: number;
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+  };
   costs: {
     embeddingCost: number;
     embeddingCostFormatted: string;
     perCandidateAvg: number;
     perPositionAvg: number;
-    llmExplanationCost: number;
+    llmCost: number;
+    llmCostFormatted: string;
   };
   pricing: {
     embeddingModel: string;
@@ -325,7 +332,10 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500">Nova LLM</p>
-              <p className="text-lg font-bold text-gray-900">~${embeddingCosts.costs.llmExplanationCost}/explanation</p>
+              <p className="text-lg font-bold text-gray-900">{embeddingCosts.costs.llmCostFormatted}</p>
+            </div>
+            <div className="text-xs text-gray-400 pl-2">
+              {embeddingCosts.llmUsage.totalTokens.toLocaleString()} tokens
             </div>
           </div>
         </div>
