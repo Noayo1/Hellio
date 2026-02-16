@@ -7,40 +7,10 @@ import type { CandidateExtraction, JobExtraction } from './validators/schema.js'
 import type { RegexResults } from './extractors/regex.js';
 
 /**
- * Generate a unique candidate ID.
+ * Generate a unique ID with the given prefix.
  */
-function generateCandidateId(): string {
-  return `cand_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-/**
- * Pass through date string as-is (columns are now TEXT type).
- * Accepts: YYYY, YYYY-MM, or null
- */
-function toDate(dateStr: string | null | undefined): string | null {
-  if (!dateStr) return null;
-  return dateStr;
-}
-
-/**
- * Parse a date string (YYYY, YYYY-MM, or "Present") to a Date object.
- * Returns current date for "Present" or null-ish values.
- */
-function parseDateToMonth(dateStr: string | null | undefined): Date {
-  if (!dateStr || dateStr.toLowerCase() === 'present') {
-    return new Date();
-  }
-  // Handle YYYY-MM format
-  if (dateStr.includes('-')) {
-    const [year, month] = dateStr.split('-').map(Number);
-    return new Date(year, (month || 1) - 1);
-  }
-  // Handle YYYY format (assume January)
-  const year = parseInt(dateStr);
-  if (!isNaN(year)) {
-    return new Date(year, 0);
-  }
-  return new Date();
+function generateId(prefix: string): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
 /**
@@ -78,28 +48,17 @@ async function calculateYearsFromExperiences(candidateId: string): Promise<numbe
 }
 
 /**
- * Get or create a skill by name.
- * Truncates to 100 chars to fit VARCHAR(100) column.
+ * Get or create a record in a lookup table by name.
+ * Truncates name to maxLength to fit column constraint.
  */
-async function getOrCreateSkill(skillName: string): Promise<number> {
-  const truncatedName = skillName.slice(0, 100);
+async function getOrCreateLookup(
+  table: 'skills' | 'languages',
+  name: string,
+  maxLength: number
+): Promise<number> {
+  const truncatedName = name.slice(0, maxLength);
   const result = await pool.query(
-    `INSERT INTO skills (name) VALUES ($1)
-     ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-     RETURNING id`,
-    [truncatedName]
-  );
-  return result.rows[0].id;
-}
-
-/**
- * Get or create a language by name.
- * Truncates to 50 chars to fit VARCHAR(50) column.
- */
-async function getOrCreateLanguage(languageName: string): Promise<number> {
-  const truncatedName = languageName.slice(0, 50);
-  const result = await pool.query(
-    `INSERT INTO languages (name) VALUES ($1)
+    `INSERT INTO ${table} (name) VALUES ($1)
      ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
      RETURNING id`,
     [truncatedName]
@@ -123,89 +82,64 @@ export async function createExtractionLog(
   return result.rows[0].id;
 }
 
+/** Field mappings: property name -> [db column, needs JSON stringify] */
+const EXTRACTION_LOG_FIELDS: Record<string, [string, boolean]> = {
+  status: ['status', false],
+  rawText: ['raw_text', false],
+  regexResults: ['regex_results', true],
+  llmRawResponse: ['llm_raw_response', false],
+  llmParsedData: ['llm_parsed_data', true],
+  validationErrors: ['validation_errors', true],
+  errorMessage: ['error_message', false],
+  parseDurationMs: ['parse_duration_ms', false],
+  llmDurationMs: ['llm_duration_ms', false],
+  totalDurationMs: ['total_duration_ms', false],
+  candidateId: ['candidate_id', false],
+  fileId: ['file_id', false],
+  promptVersion: ['prompt_version', false],
+};
+
+type ExtractionLogUpdates = {
+  status?: string;
+  rawText?: string;
+  regexResults?: RegexResults;
+  llmRawResponse?: string;
+  llmParsedData?: unknown;
+  validationErrors?: string[];
+  errorMessage?: string;
+  parseDurationMs?: number;
+  llmDurationMs?: number;
+  totalDurationMs?: number;
+  candidateId?: string;
+  fileId?: string;
+  promptVersion?: string;
+};
+
 /**
  * Update extraction log with data.
  */
 export async function updateExtractionLog(
   logId: string,
-  updates: {
-    status?: string;
-    rawText?: string;
-    regexResults?: RegexResults;
-    llmRawResponse?: string;
-    llmParsedData?: unknown;
-    validationErrors?: string[];
-    errorMessage?: string;
-    parseDurationMs?: number;
-    llmDurationMs?: number;
-    totalDurationMs?: number;
-    candidateId?: string;
-    fileId?: string;
-    promptVersion?: string;
-  }
+  updates: ExtractionLogUpdates
 ): Promise<void> {
   const setClauses: string[] = [];
   const values: unknown[] = [];
-  let paramIndex = 1;
 
-  if (updates.status !== undefined) {
-    setClauses.push(`status = $${paramIndex++}`);
-    values.push(updates.status);
-  }
-  if (updates.rawText !== undefined) {
-    setClauses.push(`raw_text = $${paramIndex++}`);
-    values.push(updates.rawText);
-  }
-  if (updates.regexResults !== undefined) {
-    setClauses.push(`regex_results = $${paramIndex++}`);
-    values.push(JSON.stringify(updates.regexResults));
-  }
-  if (updates.llmRawResponse !== undefined) {
-    setClauses.push(`llm_raw_response = $${paramIndex++}`);
-    values.push(updates.llmRawResponse);
-  }
-  if (updates.llmParsedData !== undefined) {
-    setClauses.push(`llm_parsed_data = $${paramIndex++}`);
-    values.push(JSON.stringify(updates.llmParsedData));
-  }
-  if (updates.validationErrors !== undefined) {
-    setClauses.push(`validation_errors = $${paramIndex++}`);
-    values.push(JSON.stringify(updates.validationErrors));
-  }
-  if (updates.errorMessage !== undefined) {
-    setClauses.push(`error_message = $${paramIndex++}`);
-    values.push(updates.errorMessage);
-  }
-  if (updates.parseDurationMs !== undefined) {
-    setClauses.push(`parse_duration_ms = $${paramIndex++}`);
-    values.push(updates.parseDurationMs);
-  }
-  if (updates.llmDurationMs !== undefined) {
-    setClauses.push(`llm_duration_ms = $${paramIndex++}`);
-    values.push(updates.llmDurationMs);
-  }
-  if (updates.totalDurationMs !== undefined) {
-    setClauses.push(`total_duration_ms = $${paramIndex++}`);
-    values.push(updates.totalDurationMs);
-  }
-  if (updates.candidateId !== undefined) {
-    setClauses.push(`candidate_id = $${paramIndex++}`);
-    values.push(updates.candidateId);
-  }
-  if (updates.fileId !== undefined) {
-    setClauses.push(`file_id = $${paramIndex++}`);
-    values.push(updates.fileId);
-  }
-  if (updates.promptVersion !== undefined) {
-    setClauses.push(`prompt_version = $${paramIndex++}`);
-    values.push(updates.promptVersion);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value === undefined) continue;
+    const fieldConfig = EXTRACTION_LOG_FIELDS[key];
+    if (!fieldConfig) continue;
+
+    const [column, needsStringify] = fieldConfig;
+    setClauses.push(`${column} = $${setClauses.length + 1}`);
+    values.push(needsStringify ? JSON.stringify(value) : value);
   }
 
   if (setClauses.length === 0) return;
 
   values.push(logId);
   await pool.query(
-    `UPDATE extraction_logs SET ${setClauses.join(', ')} WHERE id = $${paramIndex}`,
+    `UPDATE extraction_logs SET ${setClauses.join(', ')} WHERE id = $${values.length}`,
     values
   );
 }
@@ -218,31 +152,28 @@ async function insertCandidateRelatedData(
   candidateId: string,
   data: CandidateExtraction
 ): Promise<void> {
-  // Insert skills
   for (const skill of data.skills) {
-    const skillId = await getOrCreateSkill(skill.name);
+    const skillId = await getOrCreateLookup('skills', skill.name, 100);
     await pool.query(
       `INSERT INTO candidate_skills (candidate_id, skill_id, level) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
       [candidateId, skillId, skill.level]
     );
   }
 
-  // Insert languages
   for (const language of data.languages) {
-    const languageId = await getOrCreateLanguage(language);
+    const languageId = await getOrCreateLookup('languages', language, 50);
     await pool.query(
       `INSERT INTO candidate_languages (candidate_id, language_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [candidateId, languageId]
     );
   }
 
-  // Insert experiences with highlights
   for (let i = 0; i < data.experience.length; i++) {
     const exp = data.experience[i];
     const expResult = await pool.query(
       `INSERT INTO experiences (candidate_id, title, company, location, start_date, end_date, sort_order)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-      [candidateId, exp.title, exp.company, null, toDate(exp.startDate), toDate(exp.endDate), i]
+      [candidateId, exp.title, exp.company, null, exp.startDate || null, exp.endDate || null, i]
     );
     const expId = expResult.rows[0].id;
 
@@ -254,17 +185,15 @@ async function insertCandidateRelatedData(
     }
   }
 
-  // Insert education
   for (let i = 0; i < data.education.length; i++) {
     const edu = data.education[i];
     await pool.query(
       `INSERT INTO education (candidate_id, degree, institution, start_date, end_date, status, sort_order)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [candidateId, edu.degree, edu.institution, toDate(edu.startDate), toDate(edu.endDate), edu.status || null, i]
+      [candidateId, edu.degree, edu.institution, edu.startDate || null, edu.endDate || null, edu.status || null, i]
     );
   }
 
-  // Insert certifications
   for (let i = 0; i < data.certifications.length; i++) {
     const cert = data.certifications[i];
     await pool.query(
@@ -349,7 +278,7 @@ export async function persistCandidate(
     console.log(`Updated existing candidate: ${candidateId} (${email})`);
   } else {
     // CREATE new candidate
-    candidateId = generateCandidateId();
+    candidateId = generateId('cand');
 
     await pool.query(
       `INSERT INTO candidates (id, name, email, phone, location, linkedin, github, status, summary, years_of_experience, extraction_log_id, extraction_source)
@@ -431,13 +360,6 @@ export async function persistCandidate(
 }
 
 /**
- * Generate a unique position ID.
- */
-function generatePositionId(): string {
-  return `pos_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-/**
  * Persist job data to database.
  */
 export async function persistJob(
@@ -445,9 +367,7 @@ export async function persistJob(
   regexResults: RegexResults,
   extractionLogId: string
 ): Promise<string> {
-  const positionId = generatePositionId();
-
-  // Use regex results with LLM fallback for contact info and title
+  const positionId = generateId('pos');
   const contactEmail = regexResults.contactEmail || data.contactEmail || 'hr@company.com';
   const contactName = regexResults.contactName || data.contactName || 'HR Department';
   const title = regexResults.jobTitle || data.title;
@@ -472,16 +392,14 @@ export async function persistJob(
     ]
   );
 
-  // Insert skills
   for (const skillName of data.skills) {
-    const skillId = await getOrCreateSkill(skillName);
+    const skillId = await getOrCreateLookup('skills', skillName, 100);
     await pool.query(
       `INSERT INTO position_skills (position_id, skill_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [positionId, skillId]
     );
   }
 
-  // Insert requirements
   for (let i = 0; i < data.requirements.length; i++) {
     const req = data.requirements[i];
     await pool.query(
