@@ -347,12 +347,12 @@ export default function PositionModal({ position, candidates, onClose, onUpdate,
                     {suggestions.map((suggestion) => (
                       <div
                         key={suggestion.id}
-                        onClick={() => onSelectCandidate?.(suggestion.id)}
-                        className={`flex items-center justify-between p-4 rounded-xl bg-purple-50/50 border border-purple-100 ${
-                          onSelectCandidate ? 'cursor-pointer hover:bg-purple-100/50 hover:border-purple-200 transition-all' : ''
-                        }`}
+                        className="flex items-center justify-between p-4 rounded-xl bg-purple-50/50 border border-purple-100 hover:bg-purple-100/50 hover:border-purple-200 transition-all"
                       >
-                        <div className="flex items-center gap-3">
+                        <div
+                          className={`flex items-center gap-3 flex-1 ${onSelectCandidate ? 'cursor-pointer' : ''}`}
+                          onClick={() => onSelectCandidate?.(suggestion.id)}
+                        >
                           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-400 to-purple-500 flex items-center justify-center text-white font-medium text-sm">
                             {suggestion.name.charAt(0)}
                           </div>
@@ -361,10 +361,29 @@ export default function PositionModal({ position, candidates, onClose, onUpdate,
                             <p className="text-sm text-gray-500">{suggestion.email}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           <span className="text-sm text-purple-600 font-medium">
                             {Math.round(suggestion.similarity * 100)}% match
                           </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Fetch candidate files and download CV
+                              api.getCandidateFiles(suggestion.id).then((files: unknown) => {
+                                const fileList = files as { id: string; fileName: string; isCurrent: boolean }[];
+                                const currentFile = fileList.find(f => f.isCurrent) || fileList[0];
+                                if (currentFile) {
+                                  api.downloadFile(currentFile.id, currentFile.fileName);
+                                }
+                              });
+                            }}
+                            className="p-2 text-purple-500 hover:text-purple-700 hover:bg-purple-100 rounded-lg transition-colors"
+                            title="Download CV"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </button>
                           {onSelectCandidate && (
                             <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

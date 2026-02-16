@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { Candidate, Position } from '../types';
 import PositionCard from '../components/PositionCard';
 import PositionModal from '../components/PositionModal';
+import CandidateModal from '../components/CandidateModal';
 import { api } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -17,6 +18,7 @@ export default function PositionsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [activePosition, setActivePosition] = useState<Position | null>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
 
   // Fetch data from API
   useEffect(() => {
@@ -83,6 +85,37 @@ export default function PositionsPage() {
       setActivePosition(null);
     } catch (err) {
       console.error('Failed to delete position:', err);
+    }
+  }, []);
+
+  // Handle selecting a suggested candidate
+  const handleSelectCandidate = useCallback((candidateId: string) => {
+    const candidate = candidates.find((c) => c.id === candidateId);
+    if (candidate) {
+      setSelectedCandidate(candidate);
+    }
+  }, [candidates]);
+
+  // Handle assigning/unassigning position for a candidate
+  const handleAssignPosition = useCallback(async (candidateId: string, positionId: string, assign: boolean) => {
+    try {
+      const updatedCandidate = assign
+        ? await api.assignPosition(candidateId, positionId)
+        : await api.unassignPosition(candidateId, positionId);
+
+      setCandidates((prev) =>
+        prev.map((c) => (c.id === candidateId ? (updatedCandidate as Candidate) : c))
+      );
+
+      // Sync selectedCandidate with updated data
+      setSelectedCandidate((currentSelected) => {
+        if (currentSelected?.id === candidateId) {
+          return updatedCandidate as Candidate;
+        }
+        return currentSelected;
+      });
+    } catch (err) {
+      console.error('Failed to update position assignment:', err);
     }
   }, []);
 
@@ -175,6 +208,17 @@ export default function PositionsPage() {
           onClose={() => setActivePosition(null)}
           onUpdate={isAdmin ? handleUpdatePosition : undefined}
           onDelete={isAdmin ? handleDeletePosition : undefined}
+          onSelectCandidate={handleSelectCandidate}
+        />
+      )}
+
+      {/* Candidate Modal (opened from suggested candidates) */}
+      {selectedCandidate && (
+        <CandidateModal
+          candidate={selectedCandidate}
+          positions={positions}
+          onClose={() => setSelectedCandidate(null)}
+          onAssignPosition={handleAssignPosition}
         />
       )}
     </div>

@@ -270,10 +270,11 @@ export async function updateCandidateEmbedding(
     [candidateId]
   );
 
-  // Log embedding creation
+  // Log embedding creation with token count for cost tracking
+  const estimatedTokens = Math.ceil(embeddingText.length / 4);
   await pool.query(
-    `INSERT INTO embedding_logs (entity_type, entity_id, embedding_text, embedding_model, dimension, duration_ms)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
+    `INSERT INTO embedding_logs (entity_type, entity_id, embedding_text, embedding_model, dimension, duration_ms, input_tokens)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
     [
       'candidate',
       candidateId,
@@ -281,6 +282,7 @@ export async function updateCandidateEmbedding(
       'amazon.titan-embed-text-v2:0',
       EMBEDDING_DIMENSION,
       result.durationMs,
+      estimatedTokens,
     ]
   );
 
@@ -350,10 +352,11 @@ export async function updatePositionEmbedding(
     [positionId]
   );
 
-  // Log embedding creation
+  // Log embedding creation with token count for cost tracking
+  const estimatedTokens = Math.ceil(embeddingText.length / 4);
   await pool.query(
-    `INSERT INTO embedding_logs (entity_type, entity_id, embedding_text, embedding_model, dimension, duration_ms)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
+    `INSERT INTO embedding_logs (entity_type, entity_id, embedding_text, embedding_model, dimension, duration_ms, input_tokens)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
     [
       'position',
       positionId,
@@ -361,6 +364,7 @@ export async function updatePositionEmbedding(
       'amazon.titan-embed-text-v2:0',
       EMBEDDING_DIMENSION,
       result.durationMs,
+      estimatedTokens,
     ]
   );
 
