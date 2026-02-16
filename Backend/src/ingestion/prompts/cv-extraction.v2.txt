@@ -6,7 +6,7 @@ Extract:
 - name: Full name in English
 - location: City/region or null
 - yearsOfExperience: Extract ONLY if explicitly stated in profile text (e.g., "1-2 שנות ניסיון" → 1.5). Do NOT calculate from job dates. Return null if not stated.
-- skills: Array of {name, level}. Level MUST be null unless the CV explicitly states a proficiency level (e.g., "Advanced Python", "Expert in Java"). Do NOT infer or guess levels.
+- skills: Array of {name, level}. Extract from "Technical Stack", "Technical Skills", or "Technologies" sections FIRST. If a "Skills Matrix" section exists separately, IGNORE it - it often contains soft skills or competency ratings, not technical skills. Level MUST be null unless the CV explicitly states a proficiency level (e.g., "Advanced Python", "Expert in Java"). Do NOT infer or guess levels.
 - languages: Array of spoken languages
 - experience: Array of {title, company, startDate, endDate, highlights: string[]}. TRANSLATE all highlights to English.
 - education: Array of {degree, institution, startDate?, endDate?, status?}
@@ -25,6 +25,7 @@ RULES:
 - EVERY string in the output JSON must be in English. No Hebrew or other languages in the output.
 - yearsOfExperience: Use the number from the profile text, NOT calculated from dates.
 - Do NOT include spoken languages in skills array.
+- SKILLS EXTRACTION: Prioritize "Technical Stack", "Technical Skills", "Core Technologies" sections. IGNORE "Skills Matrix" sections - they typically contain competency ratings or soft skills, not the actual technical tools/languages used.
 - Skill levels: MUST be null unless CV explicitly states level (e.g., "Advanced", "Expert", "Beginner"). Never guess or infer based on experience.
 - Do NOT invent or fabricate any data. If information is not in the CV, use null.
 
