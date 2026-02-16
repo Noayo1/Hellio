@@ -5,7 +5,7 @@
 import { parseDocument, parseDocumentFromPath } from './parsers/index.js';
 import { extractWithRegex } from './extractors/regex.js';
 import { extractCandidateWithLLM, extractJobWithLLM } from './extractors/llm.js';
-import { validateCandidateData, validateJobData } from './validators/schema.js';
+import { validateCandidateData, validateJobData, type CandidateExtraction, type JobExtraction } from './validators/schema.js';
 import {
   createExtractionLog,
   updateExtractionLog,
@@ -15,7 +15,7 @@ import {
 import {
   updateCandidateEmbedding,
   updatePositionEmbedding,
-} from '../embeddings/index.js';
+} from '../embeddings/search.js';
 
 export interface DocumentInput {
   buffer?: Buffer;
@@ -104,12 +104,9 @@ export async function processDocument(input: DocumentInput): Promise<ExtractionR
     }
 
     // Stage 4: Validation
-    let validation;
-    if (input.type === 'cv') {
-      validation = validateCandidateData(llmResult.data);
-    } else {
-      validation = validateJobData(llmResult.data);
-    }
+    const validation = input.type === 'cv'
+      ? validateCandidateData(llmResult.data)
+      : validateJobData(llmResult.data);
 
     if (!validation.valid) {
       await updateExtractionLog(logId, {
@@ -132,7 +129,7 @@ export async function processDocument(input: DocumentInput): Promise<ExtractionR
     if (input.type === 'cv') {
       const fileBuffer = input.buffer || parseResult.buffer;
       const candidateId = await persistCandidate(
-        validation.data!,
+        validation.data as CandidateExtraction,
         regexResults,
         logId,
         fileBuffer,
@@ -155,7 +152,7 @@ export async function processDocument(input: DocumentInput): Promise<ExtractionR
     }
 
     // Job persistence
-    const positionId = await persistJob(validation.data!, regexResults, logId);
+    const positionId = await persistJob(validation.data as JobExtraction, regexResults, logId);
     await updateExtractionLog(logId, {
       status: 'success',
       totalDurationMs: Date.now() - startTime,
