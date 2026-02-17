@@ -18,9 +18,9 @@ OAUTH_KEYS_PATH = GMAIL_MCP_DIR / "gcp-oauth.keys.json"
 _service_cache = {"service": None}
 
 
-def get_gmail_service():
+def get_gmail_service(force_refresh: bool = False):
     """Get authenticated Gmail API service."""
-    if _service_cache["service"]:
+    if _service_cache["service"] and not force_refresh:
         return _service_cache["service"]
 
     if not CREDENTIALS_PATH.exists():
@@ -200,24 +200,35 @@ def create_draft(to: str, subject: str, body: str, reply_to_message_id: str = No
     """
     import email.mime.text
 
-    service = get_gmail_service()
+    print(f"[create_draft] Creating draft to={to}, subject={subject[:50]}...")
 
-    message = email.mime.text.MIMEText(body)
-    message["to"] = to
-    message["subject"] = subject
+    for attempt in range(2):
+        try:
+            service = get_gmail_service(force_refresh=(attempt > 0))
 
-    raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
+            message = email.mime.text.MIMEText(body)
+            message["to"] = to
+            message["subject"] = subject
 
-    draft_body = {"message": {"raw": raw}}
-    if reply_to_message_id:
-        draft_body["message"]["threadId"] = reply_to_message_id
+            raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
 
-    draft = service.users().drafts().create(userId="me", body=draft_body).execute()
+            draft_body = {"message": {"raw": raw}}
+            if reply_to_message_id:
+                draft_body["message"]["threadId"] = reply_to_message_id
 
-    return {
-        "id": draft["id"],
-        "message_id": draft["message"]["id"],
-    }
+            draft = service.users().drafts().create(userId="me", body=draft_body).execute()
+
+            print(f"[create_draft] SUCCESS: draft_id={draft['id']}")
+            return {
+                "id": draft["id"],
+                "message_id": draft["message"]["id"],
+            }
+        except Exception as e:
+            print(f"[create_draft] ERROR (attempt {attempt + 1}): {e}")
+            if attempt == 0 and "SSL" in str(e):
+                print("[create_draft] Retrying with fresh connection...")
+                continue
+            return {"error": str(e)}
 
 
 @tool
