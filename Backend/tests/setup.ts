@@ -24,6 +24,9 @@ beforeEach(async () => {
   await pool.query('DELETE FROM skills');
   await pool.query('DELETE FROM languages');
   await pool.query('DELETE FROM users');
+  // Agent tables
+  await pool.query('DELETE FROM agent_notifications');
+  await pool.query('DELETE FROM agent_processed_emails');
 });
 
 afterAll(async () => {

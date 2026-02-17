@@ -258,6 +258,22 @@ class ApiClient {
       body: JSON.stringify({ question, history }),
     });
   }
+
+  // Agent Notifications
+  async getNotifications(status?: string): Promise<unknown[]> {
+    const query = status ? `?status=${status}` : '';
+    return this.request(`/agent/notifications${query}`);
+  }
+
+  async updateNotification(
+    id: number,
+    status: 'reviewed' | 'dismissed'
+  ): Promise<unknown> {
+    return this.request(`/agent/notifications/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  }
 }
 
 export const api = new ApiClient();

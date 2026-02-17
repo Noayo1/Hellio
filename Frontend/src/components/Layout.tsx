@@ -1,6 +1,7 @@
 import { NavLink, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import ChatWidget from './ChatWidget';
+import NotificationsPanel from './NotificationsPanel';
 
 function Logo() {
   return (
@@ -140,6 +141,7 @@ export default function Layout() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 lg:px-8 py-10 relative z-10">
+        <NotificationsPanel />
         <Outlet />
       </main>
 

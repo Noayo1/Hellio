@@ -7,6 +7,7 @@ import filesRoutes from './files.js';
 import ingestionRoutes from './ingestion/routes.js';
 import { chatRoutes } from './chat/index.js';
 import embeddingsRoutes from './embeddings/routes.js';
+import agentRoutes from './agent.js';
 import { bootstrap } from './bootstrap.js';
 
 const app = express();
@@ -28,6 +29,7 @@ app.use('/api/files', filesRoutes);
 app.use('/api/ingestion', ingestionRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api', embeddingsRoutes);
+app.use('/api/agent', agentRoutes);
 
 // Only start server if not in test mode
 if (process.env.NODE_ENV !== 'test') {

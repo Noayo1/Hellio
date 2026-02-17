@@ -14,3 +14,9 @@ paragraph-explaining.txt
 .env.local
 .env.*.local
 .env.example
+# Python virtual environment
+.venv/
+
+# Agent Python cache
+agent/__pycache__/
+agent/**/__pycache__/

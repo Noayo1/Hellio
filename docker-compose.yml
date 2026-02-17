@@ -47,6 +47,29 @@ services:
     networks:
       - frontend-network
 
+  hr-agent:
+    build:
+      context: ./agent
+      dockerfile: Dockerfile
+    container_name: hellio-hr-agent
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HELLIO_API_URL: http://backend:3000
+      HELLIO_API_EMAIL: admin@hellio.com
+      HELLIO_API_PASSWORD: ${ADMIN_PASSWORD}
+      GMAIL_CANDIDATES: nyo1254+candidates@gmail.com
+      GMAIL_POSITIONS: nyo1254+positions@gmail.com
+      POLL_INTERVAL: "30"
+      AWS_REGION: us-east-1
+    volumes:
+      - ~/.aws:/root/.aws:ro
+      - ~/.gmail-mcp:/root/.gmail-mcp:ro
+    depends_on:
+      - backend
+    networks:
+      - backend-network
+
 volumes:
   postgres_data:
 

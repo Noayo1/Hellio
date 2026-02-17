@@ -156,3 +156,22 @@ export interface PositionSuggestion {
   similarity: number;
   explanation?: string;
 }
+
+// === AGENT NOTIFICATIONS ===
+
+export type NotificationType = 'new_candidate' | 'new_position' | 'missing_info' | 'error';
+export type NotificationStatus = 'pending' | 'reviewed' | 'dismissed';
+
+export interface AgentNotification {
+  id: number;
+  createdAt: string;
+  type: NotificationType;
+  summary: string;
+  actionUrl?: string;
+  status: NotificationStatus;
+  relatedEmailId?: string;
+  candidateId?: string;
+  positionId?: string;
+  draftId?: string;
+  metadata?: Record<string, unknown>;
+}
