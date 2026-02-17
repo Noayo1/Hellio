@@ -16,7 +16,7 @@ const TYPE_COLORS: Record<string, string> = {
   new_position: 'bg-blue-50 border-blue-200',
   missing_info: 'bg-yellow-50 border-yellow-200',
   error: 'bg-red-50 border-red-200',
-  general_inquiry: 'bg-purple-50 border-purple-200',
+  general_inquiry: 'bg-white border-gray-200',
 };
 
 function formatTimeAgo(dateString: string): string {
