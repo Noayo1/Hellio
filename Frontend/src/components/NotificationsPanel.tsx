@@ -57,17 +57,6 @@ export default function NotificationsPanel() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleDismiss = async (id: number) => {
-    try {
-      await api.updateNotification(id, 'dismissed');
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-      // Notify Layout to update badge count
-      window.dispatchEvent(new CustomEvent('notifications-changed'));
-    } catch (err) {
-      console.error('Failed to dismiss notification:', err);
-    }
-  };
-
   const handleMarkReviewed = async (id: number) => {
     try {
       await api.updateNotification(id, 'reviewed');
@@ -129,20 +118,27 @@ export default function NotificationsPanel() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {notification.actionUrl && (
+                  {notification.candidateId && (
                     <Link
-                      to={notification.actionUrl}
+                      to="/candidates"
                       className="text-xs px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
-                      onClick={() => handleMarkReviewed(notification.id)}
                     >
-                      View
+                      View Candidate
+                    </Link>
+                  )}
+                  {notification.positionId && (
+                    <Link
+                      to="/positions"
+                      className="text-xs px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                    >
+                      View Position
                     </Link>
                   )}
                   <button
-                    onClick={() => handleDismiss(notification.id)}
-                    className="text-xs px-3 py-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+                    onClick={() => handleMarkReviewed(notification.id)}
+                    className="text-xs px-3 py-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
                   >
-                    Dismiss
+                    Mark Done
                   </button>
                 </div>
               </div>

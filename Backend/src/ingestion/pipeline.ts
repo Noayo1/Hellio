@@ -37,7 +37,9 @@ export interface DocumentInput {
 export interface ExtractionResult {
   success: boolean;
   candidateId?: string;
+  candidateName?: string;
   positionId?: string;
+  positionTitle?: string;
   extractionLogId: string;
   errors?: string[];
   warnings?: string[];
@@ -137,8 +139,9 @@ export async function processDocument(input: DocumentInput): Promise<ExtractionR
     // Stage 5b: Persist and generate embedding
     if (input.type === 'cv') {
       const fileBuffer = input.buffer || parseResult.buffer;
+      const candidateData = validation.data as CandidateExtraction;
       const candidateId = await persistCandidate(
-        validation.data as CandidateExtraction,
+        candidateData,
         regexResults,
         logId,
         fileBuffer,
@@ -150,16 +153,17 @@ export async function processDocument(input: DocumentInput): Promise<ExtractionR
         totalDurationMs: Date.now() - startTime,
       });
       await safeUpdateEmbedding(() => updateCandidateEmbedding(candidateId));
-      return { success: true, candidateId, extractionLogId: logId };
+      return { success: true, candidateId, candidateName: candidateData.name, extractionLogId: logId };
     }
 
-    const positionId = await persistJob(validation.data as JobExtraction, regexResults, logId);
+    const jobData = validation.data as JobExtraction;
+    const positionId = await persistJob(jobData, regexResults, logId);
     await updateExtractionLog(logId, {
       status: 'success',
       totalDurationMs: Date.now() - startTime,
     });
     await safeUpdateEmbedding(() => updatePositionEmbedding(positionId));
-    return { success: true, positionId, extractionLogId: logId };
+    return { success: true, positionId, positionTitle: jobData.title, extractionLogId: logId };
 
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
