@@ -159,7 +159,7 @@ export interface PositionSuggestion {
 
 // === AGENT NOTIFICATIONS ===
 
-export type NotificationType = 'new_candidate' | 'new_position' | 'missing_info' | 'error';
+export type NotificationType = 'new_candidate' | 'new_position' | 'missing_info' | 'error' | 'general_inquiry';
 export type NotificationStatus = 'pending' | 'reviewed' | 'dismissed';
 
 export interface AgentNotification {

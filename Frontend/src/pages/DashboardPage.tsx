@@ -102,9 +102,6 @@ export default function DashboardPage() {
 
   return (
     <div>
-      {/* Agent Notifications - only on Dashboard */}
-      <NotificationsPanel />
-
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-purple-800 to-gray-900 bg-clip-text text-transparent">
@@ -114,6 +111,9 @@ export default function DashboardPage() {
           Overview of your recruitment pipeline
         </p>
       </div>
+
+      {/* Agent Notifications - below header */}
+      <NotificationsPanel />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

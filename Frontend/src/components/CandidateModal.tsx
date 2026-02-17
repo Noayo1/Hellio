@@ -491,37 +491,50 @@ export default function CandidateModal({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {suggestedPositions.map((pos) => (
-                    <div
-                      key={pos.id}
-                      onClick={() => onSelectPosition?.(pos.id)}
-                      className={`p-4 rounded-xl bg-emerald-50/50 border border-emerald-100 ${
-                        onSelectPosition ? 'cursor-pointer hover:bg-emerald-100/50 hover:border-emerald-200 transition-all' : ''
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <p className="font-medium text-gray-900">{pos.title}</p>
-                          <p className="text-sm text-gray-500">{pos.company}</p>
+                  {suggestedPositions.map((pos) => {
+                    const isAlreadyAssigned = candidate.positionIds.includes(pos.id);
+                    return (
+                      <div
+                        key={pos.id}
+                        className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div
+                            onClick={() => onSelectPosition?.(pos.id)}
+                            className={onSelectPosition ? 'cursor-pointer hover:opacity-80' : ''}
+                          >
+                            <p className="font-medium text-gray-900">{pos.title}</p>
+                            <p className="text-sm text-gray-500">{pos.company}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-emerald-600 font-medium">
+                              {Math.round(pos.similarity * 100)}% match
+                            </span>
+                            {isAlreadyAssigned ? (
+                              <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full">
+                                Assigned
+                              </span>
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAssignPosition(candidate.id, pos.id, true);
+                                }}
+                                className="text-xs px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                              >
+                                Assign
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-emerald-600 font-medium">
-                            {Math.round(pos.similarity * 100)}% match
-                          </span>
-                          {onSelectPosition && (
-                            <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          )}
-                        </div>
+                        {pos.explanation && (
+                          <p className="text-sm text-gray-600 mt-2 italic border-l-2 border-emerald-200 pl-3">
+                            {pos.explanation}
+                          </p>
+                        )}
                       </div>
-                      {pos.explanation && (
-                        <p className="text-sm text-gray-600 mt-2 italic border-l-2 border-emerald-200 pl-3">
-                          {pos.explanation}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </Section>

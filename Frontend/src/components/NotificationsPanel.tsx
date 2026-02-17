@@ -8,6 +8,7 @@ const TYPE_ICONS: Record<string, string> = {
   new_position: '💼',
   missing_info: '⚠️',
   error: '❌',
+  general_inquiry: '❓',
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -15,6 +16,7 @@ const TYPE_COLORS: Record<string, string> = {
   new_position: 'bg-blue-50 border-blue-200',
   missing_info: 'bg-yellow-50 border-yellow-200',
   error: 'bg-red-50 border-red-200',
+  general_inquiry: 'bg-purple-50 border-purple-200',
 };
 
 function formatTimeAgo(dateString: string): string {
@@ -101,7 +103,7 @@ export default function NotificationsPanel() {
           No pending notifications
         </div>
       ) : expanded && (
-        <div className="border border-t-0 border-purple-200 rounded-b-lg divide-y divide-gray-100">
+        <div className="border border-t-0 border-purple-200 rounded-b-lg divide-y divide-gray-100 max-h-80 overflow-y-auto">
           {notifications.map((notification) => (
             <div
               key={notification.id}
