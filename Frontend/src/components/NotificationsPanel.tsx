@@ -39,9 +39,9 @@ export default function NotificationsPanel() {
   const fetchNotifications = async () => {
     try {
       const data = await api.getNotifications('pending');
-      // Only show new_candidate and new_position notifications
+      // Show actionable notifications (ingestion + inquiries requiring response)
       const filtered = (data as AgentNotification[]).filter(
-        (n) => n.type === 'new_candidate' || n.type === 'new_position'
+        (n) => n.type === 'new_candidate' || n.type === 'new_position' || n.type === 'missing_info' || n.type === 'general_inquiry'
       );
       setNotifications(filtered);
     } catch (err) {

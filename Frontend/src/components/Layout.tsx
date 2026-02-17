@@ -43,9 +43,9 @@ export default function Layout() {
     const fetchCount = async () => {
       try {
         const notifications = await api.getNotifications('pending');
-        // Only count new_candidate and new_position types
+        // Count actionable notifications (ingestion + inquiries requiring response)
         const relevantCount = (notifications as Array<{ type: string }>).filter(
-          (n) => n.type === 'new_candidate' || n.type === 'new_position'
+          (n) => n.type === 'new_candidate' || n.type === 'new_position' || n.type === 'missing_info' || n.type === 'general_inquiry'
         ).length;
         setNotificationCount(relevantCount);
       } catch (err) {
