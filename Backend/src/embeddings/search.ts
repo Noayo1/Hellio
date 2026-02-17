@@ -114,7 +114,7 @@ export async function findSimilarPositions(
   minSimilarity: number = 0.5,
   filterByExperience: boolean = true
 ): Promise<SimilarPosition[]> {
-  const TOLERANCE = 1; // Allow positions requiring up to 1 year more than candidate has
+  const TOLERANCE = 2; // Allow positions requiring up to 2 years more than candidate has
   const PENALTY_PER_YEAR = 0.05; // 5% penalty per year short
 
   const candidateResult = await pool.query<CandidateEmbeddingRow>(
