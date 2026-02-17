@@ -19,7 +19,10 @@ For EVERY candidate email with attachment, you MUST follow this EXACT sequence:
 1. read_email → get attachment info (attachmentId, filename)
 2. download_attachment → save file to /tmp, get file_path
 3. ingest_cv(file_path, filename) → get candidateId (MUST succeed before continuing)
-4. ONLY if ingest_cv returned a candidateId: create_draft, then mark_email_processed with email_type="candidate", candidate_id=<the ID>
+4. ONLY if ingest_cv returned a candidateId:
+   - create_draft with appropriate response
+   - create_notification with type="new_candidate", candidateId, and summary
+   - mark_email_processed with email_type="candidate", candidate_id=<the ID>
 5. If ANY step fails, DO NOT call mark_email_processed
 
 ## MANDATORY WORKFLOW FOR JOB POSTING PROCESSING

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import type { Candidate, Position } from '../types';
+import NotificationsPanel from '../components/NotificationsPanel';
 
 interface DashboardStats {
   totalCandidates: number;
@@ -101,6 +102,9 @@ export default function DashboardPage() {
 
   return (
     <div>
+      {/* Agent Notifications - only on Dashboard */}
+      <NotificationsPanel />
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-purple-800 to-gray-900 bg-clip-text text-transparent">

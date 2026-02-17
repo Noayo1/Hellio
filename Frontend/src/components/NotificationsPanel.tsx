@@ -39,7 +39,11 @@ export default function NotificationsPanel() {
   const fetchNotifications = async () => {
     try {
       const data = await api.getNotifications('pending');
-      setNotifications(data as AgentNotification[]);
+      // Only show new_candidate and new_position notifications
+      const filtered = (data as AgentNotification[]).filter(
+        (n) => n.type === 'new_candidate' || n.type === 'new_position'
+      );
+      setNotifications(filtered);
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
     } finally {
@@ -57,6 +61,8 @@ export default function NotificationsPanel() {
     try {
       await api.updateNotification(id, 'dismissed');
       setNotifications((prev) => prev.filter((n) => n.id !== id));
+      // Notify Layout to update badge count
+      window.dispatchEvent(new CustomEvent('notifications-changed'));
     } catch (err) {
       console.error('Failed to dismiss notification:', err);
     }
@@ -66,37 +72,46 @@ export default function NotificationsPanel() {
     try {
       await api.updateNotification(id, 'reviewed');
       setNotifications((prev) => prev.filter((n) => n.id !== id));
+      // Notify Layout to update badge count
+      window.dispatchEvent(new CustomEvent('notifications-changed'));
     } catch (err) {
       console.error('Failed to mark notification as reviewed:', err);
     }
   };
 
   if (loading) return null;
-  if (notifications.length === 0) return null;
 
   return (
     <div className="mb-6">
       <div
-        className="flex items-center justify-between cursor-pointer p-3 bg-purple-50 rounded-t-lg border border-purple-200"
+        className="flex items-center justify-between cursor-pointer p-3 bg-purple-50 border border-purple-200 rounded-t-lg"
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-2">
           <span className="text-purple-600 font-medium">Agent Notifications</span>
-          <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full">
-            {notifications.length}
-          </span>
+          {notifications.length > 0 && (
+            <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full">
+              {notifications.length}
+            </span>
+          )}
         </div>
-        <svg
-          className={`w-5 h-5 text-purple-600 transition-transform ${expanded ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        {notifications.length > 0 && (
+          <svg
+            className={`w-5 h-5 text-purple-600 transition-transform ${expanded ? 'rotate-180' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        )}
       </div>
 
-      {expanded && (
+      {notifications.length === 0 ? (
+        <div className="border border-t-0 border-purple-200 rounded-b-lg p-4 bg-gray-50 text-center text-sm text-gray-500">
+          No pending notifications
+        </div>
+      ) : expanded && (
         <div className="border border-t-0 border-purple-200 rounded-b-lg divide-y divide-gray-100">
           {notifications.map((notification) => (
             <div

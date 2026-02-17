@@ -1,7 +1,8 @@
 import { NavLink, Outlet, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import ChatWidget from './ChatWidget';
-import NotificationsPanel from './NotificationsPanel';
+import { api } from '../api/client';
 
 function Logo() {
   return (
@@ -36,6 +37,33 @@ function Logo() {
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const [notificationCount, setNotificationCount] = useState(0);
+
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const notifications = await api.getNotifications('pending');
+        // Only count new_candidate and new_position types
+        const relevantCount = (notifications as Array<{ type: string }>).filter(
+          (n) => n.type === 'new_candidate' || n.type === 'new_position'
+        ).length;
+        setNotificationCount(relevantCount);
+      } catch (err) {
+        console.error('Failed to fetch notification count:', err);
+      }
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 30000);
+
+    // Listen for notification changes from NotificationsPanel
+    const handleNotificationChange = () => fetchCount();
+    window.addEventListener('notifications-changed', handleNotificationChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('notifications-changed', handleNotificationChange);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen gradient-mesh relative">
@@ -71,6 +99,11 @@ export default function Layout() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
                     Dashboard
+                    {notificationCount > 0 && (
+                      <span className="bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                        {notificationCount}
+                      </span>
+                    )}
                   </span>
                 </NavLink>
                 <NavLink
@@ -141,7 +174,6 @@ export default function Layout() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 lg:px-8 py-10 relative z-10">
-        <NotificationsPanel />
         <Outlet />
       </main>
 
