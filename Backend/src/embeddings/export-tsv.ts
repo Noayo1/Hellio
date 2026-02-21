@@ -12,13 +12,24 @@
 import { writeFileSync } from 'fs';
 import pool from '../db.js';
 
+function embeddingToTsv(embedding: string): string {
+  return embedding
+    .slice(1, -1)
+    .split(',')
+    .map((v: string) => parseFloat(v).toFixed(6))
+    .join('\t');
+}
+
+function formatSkills(skills: string[] | null): string {
+  return skills?.slice(0, 3).join(', ') || 'N/A';
+}
+
 async function exportEmbeddingsToTSV() {
   console.log('Exporting embeddings to TSV format...\n');
 
   const embeddingsRows: string[] = [];
   const metadataRows: string[] = ['name\ttype\ttop_skills'];
 
-  // Export candidate embeddings
   const candidates = await pool.query(`
     SELECT
       c.id,
@@ -37,20 +48,10 @@ async function exportEmbeddingsToTSV() {
   console.log(`Found ${candidates.rows.length} candidates with embeddings`);
 
   for (const row of candidates.rows) {
-    // Parse embedding vector
-    const embeddingStr = row.embedding
-      .slice(1, -1) // Remove [ and ]
-      .split(',')
-      .map((v: string) => parseFloat(v).toFixed(6))
-      .join('\t');
-
-    embeddingsRows.push(embeddingStr);
-
-    const skills = row.skills?.slice(0, 3).join(', ') || 'N/A';
-    metadataRows.push(`${row.name}\tcandidate\t${skills}`);
+    embeddingsRows.push(embeddingToTsv(row.embedding));
+    metadataRows.push(`${row.name}\tcandidate\t${formatSkills(row.skills)}`);
   }
 
-  // Export position embeddings
   const positions = await pool.query(`
     SELECT
       p.id,
@@ -70,16 +71,8 @@ async function exportEmbeddingsToTSV() {
   console.log(`Found ${positions.rows.length} positions with embeddings`);
 
   for (const row of positions.rows) {
-    const embeddingStr = row.embedding
-      .slice(1, -1)
-      .split(',')
-      .map((v: string) => parseFloat(v).toFixed(6))
-      .join('\t');
-
-    embeddingsRows.push(embeddingStr);
-
-    const skills = row.skills?.slice(0, 3).join(', ') || 'N/A';
-    metadataRows.push(`${row.title} @ ${row.company}\tposition\t${skills}`);
+    embeddingsRows.push(embeddingToTsv(row.embedding));
+    metadataRows.push(`${row.title} @ ${row.company}\tposition\t${formatSkills(row.skills)}`);
   }
 
   if (embeddingsRows.length === 0) {

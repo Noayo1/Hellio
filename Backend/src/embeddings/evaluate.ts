@@ -6,22 +6,11 @@
 import pool from '../db.js';
 import { findSimilarCandidates, findSimilarPositions } from './search.js';
 
-interface EvaluationResult {
-  testCase: string;
-  input: string;
-  expected: string;
-  actual: string[];
-  passed: boolean;
-  observations: string;
-}
-
 async function evaluateEmbeddings() {
   console.log('='.repeat(60));
   console.log('EMBEDDING RETRIEVAL EVALUATION');
   console.log('='.repeat(60));
   console.log();
-
-  const results: EvaluationResult[] = [];
 
   // Get counts
   const candidateCount = await pool.query(

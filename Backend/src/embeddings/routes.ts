@@ -127,7 +127,6 @@ router.get(
       // Experience filtering is enabled by default
       const suggestions = await findSimilarPositions(id, limit, 0.5, true);
 
-      // If no relevant positions found
       if (suggestions.length === 0) {
         return res.json({
           suggestions: [],
@@ -135,8 +134,7 @@ router.get(
         });
       }
 
-      // Get or generate explanations if requested
-      if (includeExplanation && suggestions.length > 0) {
+      if (includeExplanation) {
         // Fetch candidate embedding text for context
         const candidateQuery = await pool.query(
           'SELECT name, embedding_text FROM candidates WHERE id = $1',

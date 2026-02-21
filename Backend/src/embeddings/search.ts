@@ -169,13 +169,51 @@ export async function findSimilarPositions(
     .slice(0, limit);
 }
 
+async function storeEmbeddingAndLog(
+  entityType: 'candidate' | 'position',
+  entityId: string,
+  embeddingText: string,
+  result: import('./bedrock-embeddings.js').EmbeddingResult
+): Promise<void> {
+  const table = entityType === 'candidate' ? 'candidates' : 'positions';
+  const cacheColumn = entityType === 'candidate' ? 'candidate_id' : 'position_id';
+
+  await pool.query(
+    `UPDATE ${table}
+     SET embedding = $1::vector,
+         embedding_text = $2,
+         embedding_created_at = NOW()
+     WHERE id = $3`,
+    [`[${result.embedding.join(',')}]`, embeddingText, entityId]
+  );
+
+  await pool.query(
+    `DELETE FROM explanation_cache WHERE ${cacheColumn} = $1`,
+    [entityId]
+  );
+
+  const estimatedTokens = Math.ceil(embeddingText.length / 4);
+  await pool.query(
+    `INSERT INTO embedding_logs (entity_type, entity_id, embedding_text, embedding_model, dimension, duration_ms, input_tokens)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [
+      entityType,
+      entityId,
+      embeddingText,
+      'amazon.titan-embed-text-v2:0',
+      EMBEDDING_DIMENSION,
+      result.durationMs,
+      estimatedTokens,
+    ]
+  );
+}
+
 /**
  * Generate and store embedding for a candidate.
  */
 export async function updateCandidateEmbedding(
   candidateId: string
 ): Promise<boolean> {
-  // Fetch candidate data
   const candidateResult = await pool.query(
     `SELECT id, name, summary, location, years_of_experience as "yearsOfExperience"
      FROM candidates WHERE id = $1`,
@@ -185,7 +223,6 @@ export async function updateCandidateEmbedding(
   if (candidateResult.rows.length === 0) return false;
   const candidate = candidateResult.rows[0];
 
-  // Fetch skills
   const skillsResult = await pool.query(
     `SELECT s.name, cs.level
      FROM candidate_skills cs
@@ -195,7 +232,6 @@ export async function updateCandidateEmbedding(
   );
   candidate.skills = skillsResult.rows;
 
-  // Fetch languages
   const languagesResult = await pool.query(
     `SELECT l.name FROM candidate_languages cl
      JOIN languages l ON cl.language_id = l.id
@@ -204,7 +240,6 @@ export async function updateCandidateEmbedding(
   );
   candidate.languages = languagesResult.rows.map((r) => r.name);
 
-  // Fetch experiences with highlights
   const experiencesResult = await pool.query(
     `SELECT e.id, e.title, e.company
      FROM experiences e
@@ -227,24 +262,20 @@ export async function updateCandidateEmbedding(
     });
   }
 
-  // Fetch education
   const educationResult = await pool.query(
     `SELECT degree, institution FROM education WHERE candidate_id = $1`,
     [candidateId]
   );
   candidate.education = educationResult.rows;
 
-  // Fetch certifications
   const certsResult = await pool.query(
     `SELECT name FROM certifications WHERE candidate_id = $1`,
     [candidateId]
   );
   candidate.certifications = certsResult.rows;
 
-  // Build embedding text
   const embeddingText = buildCandidateEmbeddingText(candidate);
 
-  // Generate embedding
   const result = await generateEmbedding(embeddingText);
   if (result.error) {
     console.error(
@@ -254,38 +285,7 @@ export async function updateCandidateEmbedding(
     return false;
   }
 
-  // Store embedding
-  await pool.query(
-    `UPDATE candidates
-     SET embedding = $1::vector,
-         embedding_text = $2,
-         embedding_created_at = NOW()
-     WHERE id = $3`,
-    [`[${result.embedding.join(',')}]`, embeddingText, candidateId]
-  );
-
-  // Invalidate cached explanations (embedding changed, explanations are stale)
-  await pool.query(
-    'DELETE FROM explanation_cache WHERE candidate_id = $1',
-    [candidateId]
-  );
-
-  // Log embedding creation with token count for cost tracking
-  const estimatedTokens = Math.ceil(embeddingText.length / 4);
-  await pool.query(
-    `INSERT INTO embedding_logs (entity_type, entity_id, embedding_text, embedding_model, dimension, duration_ms, input_tokens)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [
-      'candidate',
-      candidateId,
-      embeddingText,
-      'amazon.titan-embed-text-v2:0',
-      EMBEDDING_DIMENSION,
-      result.durationMs,
-      estimatedTokens,
-    ]
-  );
-
+  await storeEmbeddingAndLog('candidate', candidateId, embeddingText, result);
   return true;
 }
 
@@ -295,7 +295,6 @@ export async function updateCandidateEmbedding(
 export async function updatePositionEmbedding(
   positionId: string
 ): Promise<boolean> {
-  // Fetch position data
   const positionResult = await pool.query(
     `SELECT id, title, company, description, location,
             experience_years as "experienceYears", work_type as "workType"
@@ -306,7 +305,6 @@ export async function updatePositionEmbedding(
   if (positionResult.rows.length === 0) return false;
   const position = positionResult.rows[0];
 
-  // Fetch skills
   const skillsResult = await pool.query(
     `SELECT s.name FROM position_skills ps
      JOIN skills s ON ps.skill_id = s.id
@@ -315,7 +313,6 @@ export async function updatePositionEmbedding(
   );
   position.skills = skillsResult.rows.map((r) => r.name);
 
-  // Fetch requirements
   const requirementsResult = await pool.query(
     `SELECT text, required FROM position_requirements
      WHERE position_id = $1 ORDER BY sort_order`,
@@ -323,10 +320,8 @@ export async function updatePositionEmbedding(
   );
   position.requirements = requirementsResult.rows;
 
-  // Build embedding text
   const embeddingText = buildPositionEmbeddingText(position);
 
-  // Generate embedding
   const result = await generateEmbedding(embeddingText);
   if (result.error) {
     console.error(
@@ -336,37 +331,6 @@ export async function updatePositionEmbedding(
     return false;
   }
 
-  // Store embedding
-  await pool.query(
-    `UPDATE positions
-     SET embedding = $1::vector,
-         embedding_text = $2,
-         embedding_created_at = NOW()
-     WHERE id = $3`,
-    [`[${result.embedding.join(',')}]`, embeddingText, positionId]
-  );
-
-  // Invalidate cached explanations (embedding changed, explanations are stale)
-  await pool.query(
-    'DELETE FROM explanation_cache WHERE position_id = $1',
-    [positionId]
-  );
-
-  // Log embedding creation with token count for cost tracking
-  const estimatedTokens = Math.ceil(embeddingText.length / 4);
-  await pool.query(
-    `INSERT INTO embedding_logs (entity_type, entity_id, embedding_text, embedding_model, dimension, duration_ms, input_tokens)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [
-      'position',
-      positionId,
-      embeddingText,
-      'amazon.titan-embed-text-v2:0',
-      EMBEDDING_DIMENSION,
-      result.durationMs,
-      estimatedTokens,
-    ]
-  );
-
+  await storeEmbeddingAndLog('position', positionId, embeddingText, result);
   return true;
 }
