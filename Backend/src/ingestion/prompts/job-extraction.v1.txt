@@ -6,7 +6,17 @@ Extract:
 - location: Job location (optional)
 - description: Comprehensive description extracted directly from the job posting. Include: the role overview, key responsibilities, team context, company info, and any unique aspects mentioned. Keep all relevant details from the original text (5-10 sentences). Do NOT summarize or shorten - preserve the important information.
 - requirements: Array of {text, required: boolean}. Items from "must have", "required", or the main requirements section should have required: true. Items from "nice to have", "preferred", "bonus", or "plus" sections should have required: false.
-- skills: Array of skill/technology names. Include all technologies mentioned anywhere: requirements, nice-to-have, tech stack, "we use", tools, platforms, languages, and frameworks.
+- skills: Array of ALL technology names found anywhere in the posting. Scan every section: requirements, nice-to-have, tech stack, "we use", "our stack", responsibilities, etc. Extract technology names even from within sentences. Only named tools, platforms, OS, languages, frameworks, databases, and cloud services. No soft skills or vague terms.
+
+IMPORTANT for skills extraction - scan the ENTIRE text for technology names:
+  "Basic understanding of Linux systems" → include "Linux"
+  "Experience with Python, Go, or similar" → include "Python", "Go"
+  "AWS (EC2, RDS, ElastiCache, Lambda)" → include "AWS" (sub-services like EC2, RDS are NOT separate skills)
+  "we use AWS" → include "AWS"
+  "Understanding of databases (MySQL, Redis)" → include "MySQL", "Redis"
+Do NOT miss technologies embedded in requirement text. Do NOT list cloud sub-services (EC2, RDS, S3, Lambda, etc.) as separate skills — just list the cloud provider (AWS, GCP, Azure).
+Do NOT list sub-tools of a database/platform as separate skills — just list the parent technology (e.g., pg_dump, WAL-G, pgBouncer → "PostgreSQL"; mongodump, mongosh → "MongoDB").
+Do NOT include compliance standards (PCI-DSS, SOC2, ISO27001, HIPAA, GDPR), Kubernetes concepts (RBAC, network policies, admission controllers, PSP/PSA), or generic security/infrastructure terms (service mesh, CNI) as skills. These belong in requirements, not skills.
 - experienceYears: Minimum years of experience required as NUMBER (e.g., "5+ years experience" → 5, "3-5 years" → 3). Extract from requirements text.
 - workType: remote/onsite/hybrid (optional)
 - salary: Salary info as text (optional)
