@@ -8,8 +8,6 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
 # Gmail credentials paths (used by gmail-mcp server)
-# Check environment variable first, fallback to home directory
-import os
 GMAIL_MCP_DIR = Path(os.getenv("GMAIL_MCP_DIR", str(Path.home() / ".gmail-mcp")))
 CREDENTIALS_PATH = GMAIL_MCP_DIR / "credentials.json"
 OAUTH_KEYS_PATH = GMAIL_MCP_DIR / "gcp-oauth.keys.json"
@@ -36,16 +34,10 @@ def get_gmail_service(force_refresh: bool = False):
     if OAUTH_KEYS_PATH.exists():
         with open(OAUTH_KEYS_PATH) as f:
             oauth_data = json.load(f)
-            # Handle nested "installed" or "web" format
-            if "installed" in oauth_data:
-                client_id = oauth_data["installed"].get("client_id")
-                client_secret = oauth_data["installed"].get("client_secret")
-            elif "web" in oauth_data:
-                client_id = oauth_data["web"].get("client_id")
-                client_secret = oauth_data["web"].get("client_secret")
-            else:
-                client_id = oauth_data.get("client_id")
-                client_secret = oauth_data.get("client_secret")
+            # Handle nested "installed" or "web" format, or top-level
+            creds_section = oauth_data.get("installed") or oauth_data.get("web") or oauth_data
+            client_id = creds_section.get("client_id")
+            client_secret = creds_section.get("client_secret")
 
     # Build credentials object
     creds = Credentials(

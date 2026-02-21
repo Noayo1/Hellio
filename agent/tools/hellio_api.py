@@ -1,6 +1,5 @@
 """Tools for interacting with Hellio HR API."""
 import requests
-import base64
 from strands import tool
 from config import API_BASE_URL, API_EMAIL, API_PASSWORD
 
@@ -27,6 +26,20 @@ def auth_headers() -> dict:
     return {"Authorization": f"Bearer {get_auth_token()}"}
 
 
+def _upload_file(file_path: str, filename: str, upload_type: str) -> dict:
+    """Upload a file through the ingestion pipeline."""
+    with open(file_path, "rb") as f:
+        file_content = f.read()
+
+    response = requests.post(
+        f"{API_BASE_URL}/api/ingestion/upload",
+        params={"type": upload_type},
+        files={"file": (filename, file_content)},
+        headers=auth_headers()
+    )
+    return response.json()
+
+
 @tool
 def ingest_cv(file_path: str, filename: str) -> dict:
     """
@@ -39,16 +52,7 @@ def ingest_cv(file_path: str, filename: str) -> dict:
     Returns:
         dict with candidateId, candidateName, status, and candidateSummary
     """
-    with open(file_path, "rb") as f:
-        file_content = f.read()
-
-    response = requests.post(
-        f"{API_BASE_URL}/api/ingestion/upload",
-        params={"type": "cv"},
-        files={"file": (filename, file_content)},
-        headers=auth_headers()
-    )
-    return response.json()
+    return _upload_file(file_path, filename, "cv")
 
 
 @tool
@@ -63,16 +67,7 @@ def ingest_job(file_path: str, filename: str) -> dict:
     Returns:
         dict with positionId, status, and positionSummary
     """
-    with open(file_path, "rb") as f:
-        file_content = f.read()
-
-    response = requests.post(
-        f"{API_BASE_URL}/api/ingestion/upload",
-        params={"type": "job"},
-        files={"file": (filename, file_content)},
-        headers=auth_headers()
-    )
-    return response.json()
+    return _upload_file(file_path, filename, "job")
 
 
 @tool
