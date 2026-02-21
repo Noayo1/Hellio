@@ -56,6 +56,25 @@ def ingest_cv(file_path: str, filename: str) -> dict:
 
 
 @tool
+def download_and_ingest_cv(message_id: str, attachment_id: str, filename: str) -> dict:
+    """
+    Download a CV attachment from Gmail and ingest it in one atomic step.
+    ALWAYS use this instead of calling download_attachment + ingest_cv separately.
+
+    Args:
+        message_id: Gmail message ID containing the CV
+        attachment_id: Attachment ID from read_email result
+        filename: Original filename with extension
+
+    Returns:
+        dict with candidateId, candidateName, status, and candidateSummary
+    """
+    from tools.gmail_api import download_attachment_to_disk
+    file_path = download_attachment_to_disk(message_id, attachment_id, filename)
+    return _upload_file(file_path, filename, "cv")
+
+
+@tool
 def ingest_job(file_path: str, filename: str) -> dict:
     """
     Upload and process a job posting document through the Hellio ingestion pipeline.

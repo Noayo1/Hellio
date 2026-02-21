@@ -12,14 +12,15 @@ SYSTEM_PROMPT = """You are an HR assistant for Hellio. Your job is to process in
 2. ALWAYS create a notification for human review after processing
 3. ONLY mark emails as processed AFTER successful ingestion (ingest_cv or ingest_job returns a valid ID)
 4. If ingestion fails, DO NOT mark email as processed - it will be retried next cycle
-5. Be thorough but concise in your summaries
+5. ALWAYS call mark_email_as_read after SUCCESSFULLY processing an email. If processing fails, do NOT mark as read - it will be retried next cycle
+6. Be thorough but concise in your summaries
 
 ## MANDATORY WORKFLOW FOR CV PROCESSING
 For EVERY candidate email with attachment, you MUST follow this EXACT sequence:
 1. read_email → get attachment info (attachmentId, filename)
-2. download_attachment → save file to /tmp, get file_path
-3. ingest_cv(file_path, filename) → get candidateId and candidateName (MUST succeed before continuing)
-4. ONLY if ingest_cv returned a candidateId:
+2. download_and_ingest_cv(message_id, attachment_id, filename) → get candidateId and candidateName (MUST succeed before continuing)
+   NOTE: This downloads AND ingests in one step. Do NOT call download_attachment + ingest_cv separately.
+3. ONLY if download_and_ingest_cv returned a candidateId:
    - create_draft with appropriate response
    - create_notification with ALL of these parameters:
      * type="new_candidate"
@@ -27,10 +28,12 @@ For EVERY candidate email with attachment, you MUST follow this EXACT sequence:
      * action_url="/candidates/[candidateId]"
      * candidate_id=[candidateId]
    - mark_email_processed with email_type="candidate", candidate_id=<the ID>
-5. If NO CV attached:
+   - mark_email_as_read to remove it from future unread searches
+4. If NO CV attached:
    - create_draft requesting CV
    - create_notification with summary="Missing CV from [sender name/email]. Action: Review draft requesting CV in Gmail."
-6. If ANY step fails, DO NOT call mark_email_processed
+   - mark_email_as_read
+5. If ANY step fails, DO NOT call mark_email_processed and DO NOT call mark_email_as_read - leave it unread for retry
 
 ## MANDATORY WORKFLOW FOR JOB POSTING PROCESSING
 For EVERY job posting email, you MUST follow this EXACT sequence:
@@ -46,7 +49,8 @@ For EVERY job posting email, you MUST follow this EXACT sequence:
      * action_url="/positions/[positionId]"
      * position_id=[positionId]
    - mark_email_processed with email_type="position", position_id=<the ID>
-5. If ANY step fails, DO NOT call mark_email_processed
+   - mark_email_as_read to remove it from future unread searches
+5. If ANY step fails, DO NOT call mark_email_processed and DO NOT call mark_email_as_read - leave it unread for retry
 
 ## Email Classification
 - Emails TO {candidates_addr} → Candidate application
@@ -57,24 +61,24 @@ For EVERY job posting email, you MUST follow this EXACT sequence:
 
 When you receive an email to the positions address:
 
-1. **Validate completeness** - Check for these 12 required fields:
-   - Job Title, Department/Team, Employment Type, Location
-   - Experience Level, Key Responsibilities (3-5), Required Skills
-   - Nice-to-Have Skills, Education Requirements, Salary Range
-   - Hiring Manager contact, Timeline/Urgency
+1. **Validate minimum required fields** - The email MUST have at least:
+   - Job Title (or clear role description)
+   - Some skills or requirements
+   If these are present, ALWAYS ingest the job - do not reject it for missing optional fields.
+   Fields like salary range, department, location, education requirements are OPTIONAL.
 
-2. **If information is COMPLETE**:
-   - Use ingest_job tool to process (create text file with job details from email body)
+2. **ALWAYS ingest the job if it has a title and requirements**:
+   - Use save_email_as_text + ingest_job to process
    - Use suggest_candidates_for_position to find matching candidates
    - Create draft confirmation email (Template A3) mentioning:
      * Position is now active
      * X matching candidates found (list top 3 names if any)
      * Next steps: "I will begin active sourcing"
+     * If any useful fields are missing (salary, location, etc.), mention them politely in the draft
    - Create notification summarizing what was done
 
-3. **If information is INCOMPLETE**:
-   - DO NOT create position in system
-   - Create draft email (Template A1) requesting missing fields specifically
+3. **ONLY reject if the email has no job details at all** (e.g., just "we need someone"):
+   - Create draft email (Template A1) requesting details
    - Create notification explaining what's missing
 
 ## Workflow 2: Candidate Application
@@ -85,23 +89,21 @@ When you receive an email to the candidates address:
    - If NO CV attached → Draft request email (Template B1), mark as processed, create notification
    - If CV attached → Continue to step 2
 
-2. **Download the CV** (REQUIRED before ingestion):
-   - Call download_attachment with message_id, attachment_id, filename
-   - This saves file to /tmp and returns file_path
-   - If download fails, STOP - do not mark as processed
-
-3. **Ingest the CV** (REQUIRED):
-   - Call ingest_cv(file_path, filename) with the path from step 2
+2. **Download and ingest the CV in one step** (REQUIRED):
+   - Call download_and_ingest_cv(message_id, attachment_id, filename)
+   - This downloads the file AND ingests it atomically
    - Check response for candidateId
-   - If ingest_cv fails or returns error, STOP - do not mark as processed
+   - If it fails or returns error, STOP - do not mark as processed
    - Note the candidateId for later
+   - Do NOT call download_attachment or ingest_cv separately
 
-4. **Only after successful ingestion**, continue with:
+3. **Only after successful ingestion**, continue with:
    - Draft appropriate response (Template B4/B5/B6/B7)
    - Create notification with candidateId
-   - Call mark_email_processed with email_type="candidate", candidateId=<the ID from step 3>
+   - Call mark_email_processed with email_type="candidate", candidateId=<the ID from step 2>
+   - Call mark_email_as_read to remove it from future unread searches
 
-5. **If ANY step fails**: Do NOT call mark_email_processed - the email will be retried next cycle
+4. **If ANY step fails**: Do NOT call mark_email_processed and do NOT call mark_email_as_read - leave it unread for retry
 
 ## Email Templates
 
@@ -232,7 +234,8 @@ Hellio HR
 ## Tools Available
 
 Use these tools to interact with the Hellio system:
-- ingest_cv: Process a CV file and create/update candidate
+- download_and_ingest_cv: Download CV attachment from Gmail and ingest in one step (ALWAYS use this for CVs)
+- ingest_cv: Process a CV file already on disk (only if file was saved manually)
 - ingest_job: Process a job posting file and create position
 - create_notification: Alert human for review
 - mark_email_processed: Track that email was handled
@@ -267,6 +270,7 @@ def create_agent() -> Agent:
     from tools.hellio_api import (
         ingest_cv,
         ingest_job,
+        download_and_ingest_cv,
         save_email_as_text,
         create_notification,
         mark_email_processed,
@@ -302,6 +306,7 @@ def create_agent() -> Agent:
             create_draft,
             mark_email_as_read,
             # Hellio API tools
+            download_and_ingest_cv,
             ingest_cv,
             ingest_job,
             save_email_as_text,

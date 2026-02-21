@@ -1,6 +1,7 @@
 """Gmail API tools for Strands agent."""
 import os
 import json
+import time
 import base64
 from pathlib import Path
 from strands import tool
@@ -54,6 +55,19 @@ def get_gmail_service(force_refresh: bool = False):
     return service
 
 
+def _gmail_call_with_retry(fn, max_retries=2):
+    """Execute a Gmail API call with SSL retry logic."""
+    for attempt in range(max_retries):
+        try:
+            return fn(get_gmail_service(force_refresh=(attempt > 0)))
+        except Exception as e:
+            if attempt < max_retries - 1 and "SSL" in str(e):
+                print(f"[gmail] SSL error, retrying with fresh connection...")
+                time.sleep(1)
+                continue
+            raise
+
+
 @tool
 def search_emails(query: str, max_results: int = 10) -> list:
     """
@@ -66,30 +80,32 @@ def search_emails(query: str, max_results: int = 10) -> list:
     Returns:
         List of email summaries with id, subject, from, date
     """
-    service = get_gmail_service()
-    results = service.users().messages().list(
-        userId="me", q=query, maxResults=max_results
-    ).execute()
-
-    messages = results.get("messages", [])
-    emails = []
-
-    for msg in messages:
-        msg_data = service.users().messages().get(
-            userId="me", id=msg["id"], format="metadata",
-            metadataHeaders=["Subject", "From", "Date", "To"]
+    def _do(service):
+        results = service.users().messages().list(
+            userId="me", q=query, maxResults=max_results
         ).execute()
 
-        headers = {h["name"]: h["value"] for h in msg_data.get("payload", {}).get("headers", [])}
-        emails.append({
-            "id": msg["id"],
-            "subject": headers.get("Subject", ""),
-            "from": headers.get("From", ""),
-            "to": headers.get("To", ""),
-            "date": headers.get("Date", ""),
-        })
+        messages = results.get("messages", [])
+        emails = []
 
-    return emails
+        for msg in messages:
+            msg_data = service.users().messages().get(
+                userId="me", id=msg["id"], format="metadata",
+                metadataHeaders=["Subject", "From", "Date", "To"]
+            ).execute()
+
+            headers = {h["name"]: h["value"] for h in msg_data.get("payload", {}).get("headers", [])}
+            emails.append({
+                "id": msg["id"],
+                "subject": headers.get("Subject", ""),
+                "from": headers.get("From", ""),
+                "to": headers.get("To", ""),
+                "date": headers.get("Date", ""),
+            })
+
+        return emails
+
+    return _gmail_call_with_retry(_do)
 
 
 @tool
@@ -103,47 +119,71 @@ def read_email(message_id: str) -> dict:
     Returns:
         Email with subject, from, to, date, body, and attachments list
     """
-    service = get_gmail_service()
-    msg = service.users().messages().get(userId="me", id=message_id, format="full").execute()
+    def _do(service):
+        msg = service.users().messages().get(userId="me", id=message_id, format="full").execute()
 
-    headers = {h["name"]: h["value"] for h in msg.get("payload", {}).get("headers", [])}
+        headers = {h["name"]: h["value"] for h in msg.get("payload", {}).get("headers", [])}
 
-    # Extract body
-    body = ""
-    attachments = []
+        # Extract body
+        body = ""
+        attachments = []
 
-    def extract_parts(payload):
-        nonlocal body
-        if "parts" in payload:
-            for part in payload["parts"]:
-                extract_parts(part)
-        else:
-            mime_type = payload.get("mimeType", "")
-            if mime_type == "text/plain" and "data" in payload.get("body", {}):
-                body = base64.urlsafe_b64decode(payload["body"]["data"]).decode("utf-8", errors="ignore")
-            elif "filename" in payload and payload["filename"]:
-                attachments.append({
-                    "filename": payload["filename"],
-                    "mimeType": mime_type,
-                    "attachmentId": payload["body"].get("attachmentId", ""),
-                    "size": payload["body"].get("size", 0),
-                })
+        def extract_parts(payload):
+            nonlocal body
+            if "parts" in payload:
+                for part in payload["parts"]:
+                    extract_parts(part)
+            else:
+                mime_type = payload.get("mimeType", "")
+                if mime_type == "text/plain" and "data" in payload.get("body", {}):
+                    body = base64.urlsafe_b64decode(payload["body"]["data"]).decode("utf-8", errors="ignore")
+                elif "filename" in payload and payload["filename"]:
+                    attachments.append({
+                        "filename": payload["filename"],
+                        "mimeType": mime_type,
+                        "attachmentId": payload["body"].get("attachmentId", ""),
+                        "size": payload["body"].get("size", 0),
+                    })
 
-    extract_parts(msg.get("payload", {}))
+        extract_parts(msg.get("payload", {}))
 
-    # If no plain text, try to get from body directly
-    if not body and "data" in msg.get("payload", {}).get("body", {}):
-        body = base64.urlsafe_b64decode(msg["payload"]["body"]["data"]).decode("utf-8", errors="ignore")
+        # If no plain text, try to get from body directly
+        if not body and "data" in msg.get("payload", {}).get("body", {}):
+            body = base64.urlsafe_b64decode(msg["payload"]["body"]["data"]).decode("utf-8", errors="ignore")
 
-    return {
-        "id": message_id,
-        "subject": headers.get("Subject", ""),
-        "from": headers.get("From", ""),
-        "to": headers.get("To", ""),
-        "date": headers.get("Date", ""),
-        "body": body,
-        "attachments": attachments,
-    }
+        return {
+            "id": message_id,
+            "subject": headers.get("Subject", ""),
+            "from": headers.get("From", ""),
+            "to": headers.get("To", ""),
+            "date": headers.get("Date", ""),
+            "body": body,
+            "attachments": attachments,
+        }
+
+    return _gmail_call_with_retry(_do)
+
+
+def download_attachment_to_disk(message_id: str, attachment_id: str, filename: str, save_path: str = "/tmp") -> str:
+    """Download an email attachment to disk (plain helper, not a tool).
+
+    Used by download_and_ingest_cv to avoid parallel tool call issues.
+    """
+    def _do(service):
+        attachment = service.users().messages().attachments().get(
+            userId="me", messageId=message_id, id=attachment_id
+        ).execute()
+
+        data = attachment.get("data", "")
+        file_bytes = base64.urlsafe_b64decode(data)
+
+        file_path = Path(save_path) / filename
+        with open(file_path, "wb") as f:
+            f.write(file_bytes)
+
+        return str(file_path)
+
+    return _gmail_call_with_retry(_do)
 
 
 @tool
@@ -160,20 +200,7 @@ def download_attachment(message_id: str, attachment_id: str, filename: str, save
     Returns:
         Full path to the saved file
     """
-    service = get_gmail_service()
-    attachment = service.users().messages().attachments().get(
-        userId="me", messageId=message_id, id=attachment_id
-    ).execute()
-
-    data = attachment.get("data", "")
-    file_bytes = base64.urlsafe_b64decode(data)
-
-    # Save to disk
-    file_path = Path(save_path) / filename
-    with open(file_path, "wb") as f:
-        f.write(file_bytes)
-
-    return str(file_path)
+    return download_attachment_to_disk(message_id, attachment_id, filename, save_path)
 
 
 @tool
@@ -194,33 +221,30 @@ def create_draft(to: str, subject: str, body: str, reply_to_message_id: str = No
 
     print(f"[create_draft] Creating draft to={to}, subject={subject[:50]}...")
 
-    for attempt in range(2):
-        try:
-            service = get_gmail_service(force_refresh=(attempt > 0))
+    def _do(service):
+        message = email.mime.text.MIMEText(body)
+        message["to"] = to
+        message["subject"] = subject
 
-            message = email.mime.text.MIMEText(body)
-            message["to"] = to
-            message["subject"] = subject
+        raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
 
-            raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
+        draft_body = {"message": {"raw": raw}}
+        if reply_to_message_id:
+            draft_body["message"]["threadId"] = reply_to_message_id
 
-            draft_body = {"message": {"raw": raw}}
-            if reply_to_message_id:
-                draft_body["message"]["threadId"] = reply_to_message_id
+        draft = service.users().drafts().create(userId="me", body=draft_body).execute()
 
-            draft = service.users().drafts().create(userId="me", body=draft_body).execute()
+        print(f"[create_draft] SUCCESS: draft_id={draft['id']}")
+        return {
+            "id": draft["id"],
+            "message_id": draft["message"]["id"],
+        }
 
-            print(f"[create_draft] SUCCESS: draft_id={draft['id']}")
-            return {
-                "id": draft["id"],
-                "message_id": draft["message"]["id"],
-            }
-        except Exception as e:
-            print(f"[create_draft] ERROR (attempt {attempt + 1}): {e}")
-            if attempt == 0 and "SSL" in str(e):
-                print("[create_draft] Retrying with fresh connection...")
-                continue
-            return {"error": str(e)}
+    try:
+        return _gmail_call_with_retry(_do)
+    except Exception as e:
+        print(f"[create_draft] ERROR: {e}")
+        return {"error": str(e)}
 
 
 @tool
@@ -234,10 +258,11 @@ def mark_email_as_read(message_id: str) -> dict:
     Returns:
         Updated message info
     """
-    service = get_gmail_service()
-    result = service.users().messages().modify(
-        userId="me", id=message_id,
-        body={"removeLabelIds": ["UNREAD"]}
-    ).execute()
+    def _do(service):
+        result = service.users().messages().modify(
+            userId="me", id=message_id,
+            body={"removeLabelIds": ["UNREAD"]}
+        ).execute()
+        return {"id": result["id"], "labels": result.get("labelIds", [])}
 
-    return {"id": result["id"], "labels": result.get("labelIds", [])}
+    return _gmail_call_with_retry(_do)

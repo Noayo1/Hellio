@@ -8,6 +8,9 @@ from datetime import datetime
 from config import POLL_INTERVAL, GMAIL_CANDIDATES_ADDRESS, GMAIL_POSITIONS_ADDRESS
 from hr_agent import create_agent
 
+# Recreate agent every N cycles to prevent context accumulation
+RESET_INTERVAL = 50
+
 # Flag for graceful shutdown
 running = True
 
@@ -47,8 +50,13 @@ def main():
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(f"[{timestamp}] Polling cycle {cycle}")
 
+        # Reset agent periodically to prevent context drift
+        if cycle % RESET_INTERVAL == 0:
+            print(f"   Resetting agent (every {RESET_INTERVAL} cycles)...")
+            agent = create_agent()
+
         try:
-            # Instruct the agent to check for new emails
+            # Instruct the agent to find and process ONE email per cycle
             prompt = f"""
 Check for new unread emails that need processing.
 
@@ -56,28 +64,40 @@ Check for new unread emails that need processing.
    - {GMAIL_CANDIDATES_ADDRESS} (candidate applications)
    - {GMAIL_POSITIONS_ADDRESS} (job postings)
 
-2. For each email found:
-   - First check if it was already processed using check_email_processed
-   - If not processed, handle it according to the appropriate workflow
+2. Find the FIRST unprocessed email:
+   - Check each email with check_email_processed
+   - Pick the first one that has NOT been processed yet
+
+3. If you found an unprocessed email:
+   - Process it according to the appropriate workflow
    - Mark it as processed when done
+   - Then STOP - do not process any more emails this cycle
 
-3. Summarize what you did (or say "No new emails to process" if inbox is clear)
+4. If all emails are already processed (or no emails found):
+   - Say "No new emails to process" and STOP
 
-Be efficient - if there are no new emails, just report that and finish.
+IMPORTANT: Only process ONE email per cycle. After handling one email, stop immediately.
 """
             result = agent(prompt)
+            result_text = str(result).lower()
             print(f"   Result: {result}")
+
+            # If agent processed an email, immediately start next cycle
+            has_work = "no new emails" not in result_text
 
         except Exception as e:
             print(f"   Error in polling cycle: {e}")
+            has_work = False
 
-        if running:
+        if running and not has_work:
             print(f"   Sleeping for {POLL_INTERVAL} seconds...")
             # Sleep in small increments to allow graceful shutdown
             for _ in range(POLL_INTERVAL):
                 if not running:
                     break
                 time.sleep(1)
+        elif running and has_work:
+            print("   More emails may be waiting, starting next cycle immediately...")
 
     print()
     print("HR Email Agent stopped.")
