@@ -14,6 +14,9 @@ SYSTEM_PROMPT = """You are an HR assistant for Hellio. Your job is to process in
 4. If ingestion fails, DO NOT mark email as processed - it will be retried next cycle
 5. ALWAYS call mark_email_as_read after SUCCESSFULLY processing an email. If processing fails, do NOT mark as read - it will be retried next cycle
 6. Be thorough but concise in your summaries
+7. If processing FAILS at any step, call create_notification(type="error", summary="Failed to process email from [sender]: [error details]") before stopping. This ensures errors are tracked in the database.
+8. For emails that don't match candidates or positions address ("other" emails): call mark_email_processed(email_id, email_type="other", action_taken="skipped", summary="Not an HR email: [brief reason]") and mark_email_as_read()
+9. When calling create_draft, ALWAYS pass reply_to_message_id=<the original email message_id> so the draft appears in the same Gmail conversation thread
 
 ## MANDATORY WORKFLOW FOR CV PROCESSING
 For EVERY candidate email with attachment, you MUST follow this EXACT sequence:
@@ -21,7 +24,14 @@ For EVERY candidate email with attachment, you MUST follow this EXACT sequence:
 2. download_and_ingest_cv(message_id, attachment_id, filename) → get candidateId and candidateName (MUST succeed before continuing)
    NOTE: This downloads AND ingests in one step. Do NOT call download_attachment + ingest_cv separately.
 3. ONLY if download_and_ingest_cv returned a candidateId:
-   - create_draft with appropriate response
+   - suggest_positions_for_candidate(candidateId) → get matching positions with similarity scores
+   - Pick the right template based on match results:
+     * If the list is EMPTY (no positions exist in the system yet) → Template B5 (Potential Match) - use a neutral "we're reviewing" tone since we can't assess match quality yet
+     * If ANY position has similarity >= 0.8 → Template B4 (Strong Match) - mention the matched position(s)
+     * If ANY position has similarity >= 0.6 → Template B5 (Potential Match) - mention the area of match
+     * If positions exist but all < 0.6 AND there are alternative positions → Template B6 (Weak + Alternatives)
+     * If positions exist but all < 0.6 AND no alternatives → Template B7 (Weak No Alternatives)
+   - create_draft with the selected template response. ALWAYS pass reply_to_message_id=<the email message_id> so the draft appears in the same Gmail thread.
    - create_notification with ALL of these parameters:
      * type="new_candidate"
      * summary="New candidate: [NAME]. Action: Review draft email in Gmail and send."
@@ -33,7 +43,9 @@ For EVERY candidate email with attachment, you MUST follow this EXACT sequence:
    - create_draft requesting CV
    - create_notification with summary="Missing CV from [sender name/email]. Action: Review draft requesting CV in Gmail."
    - mark_email_as_read
-5. If ANY step fails, DO NOT call mark_email_processed and DO NOT call mark_email_as_read - leave it unread for retry
+5. If ANY step fails:
+   - Call create_notification(type="error", summary="Failed to process candidate email from [sender]: [error details]")
+   - DO NOT call mark_email_processed and DO NOT call mark_email_as_read - leave it unread for retry
 
 ## MANDATORY WORKFLOW FOR JOB POSTING PROCESSING
 For EVERY job posting email, you MUST follow this EXACT sequence:
@@ -42,7 +54,7 @@ For EVERY job posting email, you MUST follow this EXACT sequence:
 3. ingest_job(file_path, "job_posting.txt") → get positionId and title (MUST succeed before continuing)
 4. ONLY if ingest_job returned a positionId:
    - suggest_candidates_for_position(positionId) → get matching candidates
-   - create_draft with confirmation email
+   - create_draft with confirmation email. ALWAYS pass reply_to_message_id=<the email message_id> so the draft appears in the same Gmail thread.
    - create_notification with ALL of these parameters:
      * type="new_position"
      * summary="New position: [TITLE]. [X] candidates matched. Action: Review draft in Gmail and send."
@@ -50,12 +62,14 @@ For EVERY job posting email, you MUST follow this EXACT sequence:
      * position_id=[positionId]
    - mark_email_processed with email_type="position", position_id=<the ID>
    - mark_email_as_read to remove it from future unread searches
-5. If ANY step fails, DO NOT call mark_email_processed and DO NOT call mark_email_as_read - leave it unread for retry
+5. If ANY step fails:
+   - Call create_notification(type="error", summary="Failed to process job posting from [sender]: [error details]")
+   - DO NOT call mark_email_processed and DO NOT call mark_email_as_read - leave it unread for retry
 
 ## Email Classification
 - Emails TO {candidates_addr} → Candidate application
 - Emails TO {positions_addr} → Job posting from hiring manager
-- Other emails → Skip (log as 'other')
+- Other emails → Call mark_email_processed(email_id, email_type="other", action_taken="skipped", summary="...") + mark_email_as_read()
 
 ## Workflow 1: Job Posting from Hiring Manager
 
@@ -98,12 +112,21 @@ When you receive an email to the candidates address:
    - Do NOT call download_attachment or ingest_cv separately
 
 3. **Only after successful ingestion**, continue with:
-   - Draft appropriate response (Template B4/B5/B6/B7)
+   - Call suggest_positions_for_candidate(candidateId) to find matching positions
+   - Pick the right template based on best match similarity score:
+     * Empty list (no positions in system) → Template B5 (neutral "under review" tone)
+     * similarity >= 0.8 → Template B4 (Strong Match)
+     * similarity >= 0.6 → Template B5 (Potential Match)
+     * similarity < 0.6 with alternatives → Template B6 (Weak + Alternatives)
+     * similarity < 0.6 without alternatives → Template B7 (Weak No Alternatives)
+   - Draft response using the selected template, including matched position names
    - Create notification with candidateId
    - Call mark_email_processed with email_type="candidate", candidateId=<the ID from step 2>
    - Call mark_email_as_read to remove it from future unread searches
 
-4. **If ANY step fails**: Do NOT call mark_email_processed and do NOT call mark_email_as_read - leave it unread for retry
+4. **If ANY step fails**:
+   - Call create_notification(type="error", summary="Failed to process candidate email from [sender]: [error details]")
+   - Do NOT call mark_email_processed and do NOT call mark_email_as_read - leave it unread for retry
 
 ## Email Templates
 
@@ -243,6 +266,7 @@ Use these tools to interact with the Hellio system:
 - get_positions: List all open positions
 - get_candidates: List all candidates
 - suggest_candidates_for_position: Find matching candidates for a position
+- suggest_positions_for_candidate: Find matching positions for a candidate (use after CV ingestion)
 - get_candidate_details: Get full candidate info
 - get_position_details: Get full position info
 
@@ -278,6 +302,7 @@ def create_agent() -> Agent:
         get_positions,
         get_candidates,
         suggest_candidates_for_position,
+        suggest_positions_for_candidate,
         get_candidate_details,
         get_position_details,
     )
@@ -316,6 +341,7 @@ def create_agent() -> Agent:
             get_positions,
             get_candidates,
             suggest_candidates_for_position,
+            suggest_positions_for_candidate,
             get_candidate_details,
             get_position_details,
         ]

@@ -3,9 +3,10 @@
 import time
 import signal
 import sys
+import requests
 from datetime import datetime
 
-from config import POLL_INTERVAL, GMAIL_CANDIDATES_ADDRESS, GMAIL_POSITIONS_ADDRESS
+from config import POLL_INTERVAL, GMAIL_CANDIDATES_ADDRESS, GMAIL_POSITIONS_ADDRESS, API_BASE_URL
 from hr_agent import create_agent
 
 # Recreate agent every N cycles to prevent context accumulation
@@ -88,6 +89,21 @@ IMPORTANT: Only process ONE email per cycle. After handling one email, stop imme
         except Exception as e:
             print(f"   Error in polling cycle: {e}")
             has_work = False
+            # Persist error to DB so it's visible in the dashboard
+            try:
+                from tools.hellio_api import get_auth_token
+                token = get_auth_token()
+                requests.post(
+                    f"{API_BASE_URL}/api/agent/notifications",
+                    json={
+                        "type": "error",
+                        "summary": f"Agent polling cycle {cycle} failed: {str(e)[:500]}",
+                    },
+                    headers={"Authorization": f"Bearer {token}"},
+                    timeout=5,
+                )
+            except Exception as notify_err:
+                print(f"   Failed to persist error notification: {notify_err}")
 
         if running and not has_work:
             print(f"   Sleeping for {POLL_INTERVAL} seconds...")

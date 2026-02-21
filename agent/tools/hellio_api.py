@@ -253,7 +253,27 @@ def suggest_candidates_for_position(position_id: str) -> list:
         List of up to 3 matching candidates with similarity scores
     """
     response = requests.get(
-        f"{API_BASE_URL}/api/embeddings/positions/{position_id}/suggest-candidates",
+        f"{API_BASE_URL}/api/positions/{position_id}/suggest-candidates",
+        headers=auth_headers()
+    )
+    if response.status_code != 200:
+        return []
+    return response.json()
+
+
+@tool
+def suggest_positions_for_candidate(candidate_id: str) -> list:
+    """
+    Get semantically similar positions for a candidate using embeddings.
+
+    Args:
+        candidate_id: The candidate ID to find matching positions for
+
+    Returns:
+        List of up to 3 matching positions with similarity scores and explanations
+    """
+    response = requests.get(
+        f"{API_BASE_URL}/api/candidates/{candidate_id}/suggest-positions",
         headers=auth_headers()
     )
     if response.status_code != 200:
