@@ -20,3 +20,7 @@ paragraph-explaining.txt
 # Agent Python cache
 agent/__pycache__/
 agent/**/__pycache__/
+
+# Exceptions
+!README.md
+!Diagrams/*.png
